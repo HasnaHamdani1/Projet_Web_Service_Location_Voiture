@@ -44,6 +44,7 @@ class ContractRead(BaseModel):
     date_validation: datetime | None
     montant_caution: float | None
     date_enregistrement_caution: datetime | None
+    date_cloture: datetime | None
     periode_prise: date
     periode_fin: date
     montant_total: float

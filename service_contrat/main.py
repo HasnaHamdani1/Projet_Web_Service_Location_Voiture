@@ -258,7 +258,10 @@ def cloturer_contrat(
             Contract.statut == ContractStatus.VALIDE,
         )
         .update(
-            {Contract.statut: ContractStatus.CLOTURE},
+            {
+                Contract.statut: ContractStatus.CLOTURE,
+                Contract.date_cloture: func.utc_timestamp(),
+            },
             synchronize_session=False,
         )
     )

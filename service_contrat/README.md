@@ -11,6 +11,7 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - The owning client validates/signs a pending contract, changing its status to `VALIDE`.
 - Validation records `date_validation` in UTC for traceability.
 - An administrator closes a validated contract after return, changing its status to `CLOTURE`. Return-service authentication still needs to be aligned before that service calls this endpoint directly.
+- Closure records `date_cloture` in UTC for auditability.
 - The database unique key on `reservation_id` prevents duplicate contracts, including concurrent creation requests.
 - There is no contract-term update endpoint. After validation, only the lifecycle status can change.
 
@@ -39,7 +40,7 @@ Protected routes expect a bearer JWT with claims `sub` (positive numeric user ID
 
 ## Database
 
-The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table, then apply migrations `002` and `003`. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
+The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table, then apply migrations `002`, `003`, and `004`. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
 
 ## Run
 

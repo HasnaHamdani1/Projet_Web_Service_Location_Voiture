@@ -39,6 +39,7 @@ class Contract(Base):
     date_validation = Column(DateTime, nullable=True)
     montant_caution = Column(Float, nullable=True)
     date_enregistrement_caution = Column(DateTime, nullable=True)
+    date_cloture = Column(DateTime, nullable=True)
     periode_prise = Column(Date, nullable=False)
     periode_fin = Column(Date, nullable=False)
     montant_total = Column(Float, nullable=False)
