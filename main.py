@@ -1,5 +1,7 @@
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+import os
 from database import engine, Base, SessionLocal
 from models import Vehicule
 from pydantic import BaseModel, Field
@@ -9,6 +11,15 @@ from sqlalchemy.orm import Session
 
 
 app = FastAPI(title="Service Véhicule")
+cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
 
 Base.metadata.create_all(bind=engine)
 

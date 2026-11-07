@@ -24,7 +24,7 @@ These describe the files as they currently exist; they are not all deployment-re
 - The SQL dump permits Reservation statuses `EN_ATTENTE`, `CONFIRMEE`, `ANNULEE`, and `PAYEE`. `PAYEE` is not used by the current Reservation API code.
 - The SQL dump defines Return condition values `BON`, `LEGER_DOMMAGE`, and `DOMMAGE_IMPORTANT`.
 - The Vehicle and Reservation services now accept `DATABASE_URL`; Compose points both at the shared MySQL database while direct local runs retain SQLite defaults. Their ORM mappings now use the SQL dump's singular `vehicule` and `reservation` tables; Reservation's public attribute `prix_total` maps to SQL column `montant_estime`.
-- The repository has a root Compose stack for MySQL, Vehicle, Reservation, Contract, and Authentication, plus Dockerfiles for those APIs. Return and frontend services are still absent. The SQL dump identifies MariaDB 10.4 as its source; Compose currently targets MySQL 8.4.13, so keep schema compatibility in the integration checklist.
+- The repository has a root Compose stack for MySQL, Vehicle, Reservation, Contract, Authentication, and the frontend, plus Dockerfiles for those services. Return is still absent and assigned to its owner. The SQL dump identifies MariaDB 10.4 as its source; Compose currently targets MySQL 8.4.13, so keep schema compatibility in the integration checklist.
 
 ## 3. Rules to share across all service owners
 
@@ -223,7 +223,7 @@ Record an owner and decision for each item:
 4. Choose project currency and adopt fixed-precision money storage.
 5. Add and agree role enforcement for Vehicle, Reservation, and Return endpoints using the Auth token claims.
 6. Confirm the proposed Reservation/Contract extension workflow, deposit policy, and how Return triggers Contract closure.
-7. Assign owners for Return, frontend, integration tests, and ongoing Compose/schema maintenance.
+7. Return and frontend now have repository-level implementations; confirm the Return owner and assign owners for integration testing and ongoing Compose/schema maintenance.
 8. Ratify the common REST paths, response/error shapes, and Reservation extension idempotency contract in section 3.2.1.
 9. Reservation-service owner: implement and document `POST /reservations/{reservation_id}/prolongations` as specified in section 3.2.1; Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
 

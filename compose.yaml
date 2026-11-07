@@ -28,6 +28,7 @@ services:
       dockerfile: Dockerfile.vehicule
     environment:
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -48,6 +49,7 @@ services:
     environment:
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
       VEHICLE_SERVICE_URL: http://service_vehicule:8000
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -108,6 +110,32 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    environment:
+      AUTH_API_URL: http://localhost:8004
+      VEHICLE_API_URL: http://localhost:8001
+      RESERVATION_API_URL: http://localhost:8002
+      CONTRACT_API_URL: http://localhost:8003
+    depends_on:
+      service_auth:
+        condition: service_healthy
+      service_vehicule:
+        condition: service_healthy
+      service_reservation:
+        condition: service_healthy
+      service_contrat:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     restart: unless-stopped
 
 volumes:

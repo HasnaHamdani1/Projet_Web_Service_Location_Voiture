@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102a43">
+  <title>Atlas Auto | Location de voitures</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#accueil" aria-label="Atlas Auto, accueil">
+      <span class="brand-mark">A</span>
+      <span>atlas<span class="brand-light">auto</span></span>
+    </a>
+    <div class="topbar-actions">
+      <span id="connection-status" class="connection"><i></i> Vérification des services…</span>
+      <button id="logout-button" class="button button-quiet" hidden>Déconnexion</button>
+    </div>
+  </header>
+
+  <main id="accueil">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Votre prochaine route commence ici</p>
+        <h1>Louez la voiture<br><em>qui vous ressemble.</em></h1>
+        <p class="hero-description">Choisissez votre véhicule, réservez vos dates et partez l’esprit tranquille.</p>
+        <a class="button button-light" href="#vehicules">Découvrir les véhicules <span aria-hidden="true">↓</span></a>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="sun"></div>
+        <div class="road"></div>
+        <div class="car-art"><span class="car-window"></span><span class="wheel wheel-one"></span><span class="wheel wheel-two"></span></div>
+        <span class="art-label">LIBERTÉ<br>EN ROUTE</span>
+      </div>
+    </section>
+
+    <section id="auth-section" class="auth-section">
+      <div class="section-heading compact-heading">
+        <div><p class="eyebrow">Espace client</p><h2>Connectez-vous pour réserver</h2></div>
+        <p>Déjà inscrit ? Connectez-vous. Nouveau ici ? Créez votre compte en quelques instants.</p>
+      </div>
+      <div class="auth-grid">
+        <form id="login-form" class="panel form-panel">
+          <h3>Connexion</h3>
+          <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
+          <label>Mot de passe<input name="mot_de_passe" type="password" autocomplete="current-password" required></label>
+          <button class="button button-primary" type="submit">Se connecter</button>
+          <p id="login-message" class="form-message" aria-live="polite"></p>
+        </form>
+        <form id="register-form" class="panel form-panel">
+          <h3>Créer un compte client</h3>
+          <div class="field-row">
+            <label>Nom complet<input name="nom" autocomplete="name" maxlength="100" required></label>
+            <label>Téléphone<input name="telephone" type="tel" autocomplete="tel" maxlength="30"></label>
+          </div>
+          <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
+          <label>Adresse<input name="adresse" autocomplete="street-address" maxlength="255" required></label>
+          <label>Mot de passe<input name="mot_de_passe" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><small>12 caractères minimum</small></label>
+          <button class="button button-outline" type="submit">Créer mon compte</button>
+          <p id="register-message" class="form-message" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="app-section" hidden>
+      <div class="welcome-row">
+        <div><p class="eyebrow">Bienvenue</p><h2 id="welcome-title">Votre espace</h2></div>
+        <span id="role-badge" class="role-badge"></span>
+      </div>
+
+      <section id="admin-reservations" class="panel admin-panel" hidden>
+        <div class="section-heading"><div><p class="eyebrow">Administration</p><h2>Réservations à traiter</h2></div><button id="refresh-reservations" class="button button-outline">Actualiser</button></div>
+        <div id="reservation-list" class="table-wrap"></div>
+      </section>
+
+      <section id="vehicules" class="content-section">
+        <div class="section-heading"><div><p class="eyebrow">Notre flotte</p><h2>Un véhicule pour chaque trajet</h2></div><p>Indiquez vos dates pour vérifier la disponibilité.</p></div>
+        <div id="vehicle-grid" class="vehicle-grid"><div class="loading-card">Chargement des véhicules…</div></div>
+      </section>
+
+      <section id="my-reservations" class="content-section" hidden>
+        <div class="section-heading"><div><p class="eyebrow">Vos demandes</p><h2>Réservations créées ici</h2></div></div>
+        <div id="my-reservation-list" class="reservation-grid"></div>
+        <p class="helper-text">Cette liste reflète les réservations créées pendant cette session. Votre service Réservation ne propose pas encore de route pour lister uniquement vos réservations.</p>
+      </section>
+
+      <section id="contracts" class="content-section">
+        <div class="section-heading"><div><p class="eyebrow">Documents</p><h2>Contrats de location</h2></div><button id="refresh-contracts" class="button button-outline">Actualiser</button></div>
+        <div id="contract-list" class="contract-grid"><div class="empty-state">Connectez-vous pour consulter vos contrats.</div></div>
+      </section>
+    </section>
+  </main>
+
+  <footer><span class="brand-mark small-mark">A</span><span>Atlas Auto</span><span class="footer-note">Roulez à votre rythme.</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
