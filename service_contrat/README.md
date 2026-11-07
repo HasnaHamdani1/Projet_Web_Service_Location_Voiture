@@ -34,7 +34,7 @@ FastAPI OpenAPI docs are available at `/docs` when the service is running.
 
 ## Configuration
 
-Copy `.env.example` values into the root Compose environment (do not commit a real `.env`). The service requires:
+Configure the shared environment in the repository-root `.env` by copying `.env.example` and replacing its placeholders. Compose reads that root file; this service does not use a separate `service_contrat/.env` file. Do not commit real credentials. The Contract service requires:
 
 - `DATABASE_URL`: SQLAlchemy MySQL connection string for the shared database, for example `mysql+pymysql://location_app:replace_me@mysql:3306/db_location_vehicules` (replace the dummy credentials in your local `.env`).
 - `RESERVATION_SERVICE_URL`: Reservation base URL; in Compose this should be `http://service_reservation:8000`.
@@ -46,11 +46,23 @@ Protected routes expect a bearer JWT with claims `sub` (positive numeric user ID
 
 ## Database
 
-The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table, then apply migrations `002` through `005`. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
+The ORM maps the shared schema's singular `contrat` table and its fields. The root Compose setup initializes a new MySQL volume from `db_location_vehicules.sql` (which already creates this table), then applies migrations `002` through `005`. It does not run migration `001_create_contrat.sql`; do not apply that `CREATE TABLE` migration on top of the base dump. The service never runs `create_all()` or changes the shared schema automatically. The dump permits nullable `reservation_id`, although this API always sets it; making the column `NOT NULL` remains a coordinated schema migration.
 
 The extension endpoint depends on `POST /reservations/{id}/prolongations` with atomic conflict checking and idempotency support. Until Reservation implements that endpoint, extension requests cannot complete and return an upstream error.
 
-## Run
+## Run with the project stack
+
+From the repository root, copy `.env.example` to `.env`, replace the placeholder credentials and JWT secret, then start the stack:
+
+```powershell
+docker compose up --build
+```
+
+The Contract API is published at `http://localhost:8003` and its OpenAPI page is at `http://localhost:8003/docs`. To create the first administrator, run `docker compose exec service_auth python -m service_auth.create_admin`.
+
+Compose initializes migration scripts only when creating an empty MySQL data volume. For an existing volume, apply any unapplied migrations using the team's agreed migration procedure before deploying the updated service.
+
+## Build or run the Contract service alone
 
 Build from the repository root so Docker can copy the service directory:
 
@@ -58,37 +70,9 @@ Build from the repository root so Docker can copy the service directory:
 docker build -f service_contrat/Dockerfile -t service_contrat .
 ```
 
-The container runs as the unprivileged `appuser` account.
+The container runs as the unprivileged `appuser` account. For local non-Compose execution, install `service_contrat/requirements.txt` and provide reachable `DATABASE_URL`, `RESERVATION_SERVICE_URL`, and `JWT_SECRET` values. The Compose hostname `mysql` is only resolvable from containers on the project network.
 
-Add the following service entry to the team's root `compose.yaml` (the `mysql` and `service_reservation` services are owned/configured at the project level):
-
-```yaml
-services:
-  service_contrat:
-    build:
-      context: .
-      dockerfile: service_contrat/Dockerfile
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      RESERVATION_SERVICE_URL: http://service_reservation:8000
-      RESERVATION_SERVICE_TIMEOUT_SECONDS: ${RESERVATION_SERVICE_TIMEOUT_SECONDS:-5}
-      JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS:-}
-    depends_on:
-      mysql:
-        condition: service_healthy
-    expose:
-      - "8000"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-```
-
-Apply the Contract migrations to the shared database before starting this container. Add a host `ports` mapping only if developers need to access the Contract API directly; internal services use `http://service_contrat:8000`.
-
-In a local Python environment, install `requirements.txt`, set the environment variables above, then run:
+Run the local API from the repository root with:
 
 ```powershell
 uvicorn service_contrat.main:app --reload

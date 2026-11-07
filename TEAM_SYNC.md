@@ -86,15 +86,15 @@ The routes below distinguish **implemented in the repository** from **proposed f
 | Authentication | `POST /auth/inscription` | Register a customer account | Implemented in `service_auth/` |
 | Authentication | `POST /auth/token` | Verify credentials and issue JWT | Implemented in `service_auth/` |
 | Authentication | `GET /auth/me` | Return authenticated account profile | Implemented in `service_auth/` |
-| Contract | `POST /contrats` | Admin creates from `{"reservation_id": 123}` | Implemented on Contract branch |
-| Contract | `GET /contrats` | List contracts, scoped to client or admin | Implemented on Contract branch |
-| Contract | `GET /contrats/{contrat_id}` | Get contract by ID, ownership-scoped | Implemented on Contract branch |
-| Contract | `GET /contrats/numero/{numero_contrat}` | Get contract by unique number, ownership-scoped | Implemented on Contract branch |
-| Contract | `POST /contrats/{contrat_id}/caution` | Admin records `{"montant_caution": 500.00}` before signature | Implemented on Contract branch |
-| Contract | `POST /contrats/{contrat_id}/validation` | Owning client signs/validates; status becomes `VALIDE` | Implemented on Contract branch |
-| Contract | `POST /contrats/{contrat_id}/cloture` | Admin closes validated contract after return | Implemented on Contract branch |
-| Contract | `POST /contrats/{contrat_id}/prolongations` | Admin extends a validated contract and stores an annex | Implemented on Contract branch; requires Reservation support below |
-| Contract | `GET /contrats/{contrat_id}/prolongations` | List extension annexes, ownership-scoped | Implemented on Contract branch |
+| Contract | `POST /contrats` | Admin creates from `{"reservation_id": 123}` | Implemented |
+| Contract | `GET /contrats` | List contracts, scoped to client or admin | Implemented |
+| Contract | `GET /contrats/{contrat_id}` | Get contract by ID, ownership-scoped | Implemented |
+| Contract | `GET /contrats/numero/{numero_contrat}` | Get contract by unique number, ownership-scoped | Implemented |
+| Contract | `POST /contrats/{contrat_id}/caution` | Admin records `{"montant_caution": 500.00}` before signature | Implemented |
+| Contract | `POST /contrats/{contrat_id}/validation` | Owning client signs/validates; status becomes `VALIDE` | Implemented |
+| Contract | `POST /contrats/{contrat_id}/cloture` | Admin closes validated contract after return | Implemented; Return workflow not integrated |
+| Contract | `POST /contrats/{contrat_id}/prolongations` | Admin extends a validated contract and stores an annex | Implemented in Contract; requires Reservation support below |
+| Contract | `GET /contrats/{contrat_id}/prolongations` | List extension annexes, ownership-scoped | Implemented |
 
 **Reservation read response** is a direct JSON object, not wrapped in a `reservation` property:
 
@@ -152,13 +152,15 @@ The Auth service now registers clients and issues HS256 JWTs with `sub` (user ID
 
 ### 3.6 MySQL schema and migrations
 
-Before switching services from SQLite, agree on one canonical MySQL schema and migration owner/process. Resolve these existing mismatches together:
+The root Compose setup currently shares MySQL across the available APIs and initializes the schema from `db_location_vehicules.sql`, followed by Contract migrations 002-005 on a fresh volume. Remaining schema and migration decisions:
 
-1. Singular SQL table names (`vehicule`, `reservation`) vs plural ORM names (`vehicules`, `reservations`). Recommended: use the SQL dump's singular names as the starting point and update ORM mappings, or formally update the schema and all mappings in one change.
-2. SQL `montant_estime` vs Reservation API/model `prix_total`. Recommended: keep `prix_total` as the REST field and settle one database column name in the canonical migration.
-3. SQL dump source reports MariaDB; Compose pins MySQL 8.4.13. Verify the schema import against that image and do not switch the database product/version silently.
+1. The Vehicle and Reservation ORM mappings use the dump's singular table names; Reservation maps its API/model field `prix_total` to SQL column `montant_estime`.
+2. The SQL dump allows `PAYEE`, while Reservation code uses `CONFIRMEE`; agree whether `PAYEE` is removed or given a distinct meaning.
+3. The SQL dump was generated from MariaDB 10.4 while Compose uses MySQL 8.4.13. Verify clean-volume initialization against that image before deployment.
+4. Money currently uses Python `float` and SQL `DOUBLE`; agree on a currency and whether to migrate to fixed precision.
+5. The dump allows nullable `contrat.reservation_id`, while the Contract API requires a reservation. Coordinate a `NOT NULL` migration.
 
-Use versioned migrations rather than relying on each service's `create_all()` at startup in deployment. Each service may own its migrations, but the team must define one ordered migration process in Compose and CI.
+The root Compose initialization applies the base dump and Contract migrations 002-005 only when the MySQL volume is empty. Existing volumes need an explicit migration procedure. Agree on one ordered migration process for deployment and CI; do not reapply a `CREATE TABLE` migration after the base dump has created that table.
 
 ### 3.7 Docker Compose and service discovery
 
@@ -175,7 +177,7 @@ Use versioned migrations rather than relying on each service's `create_all()` at
 - Each owner tests their service's business rules; the team maintains integration checks that start Compose and exercise service-to-service paths, especially Reservation → Contract and Return → Contract/Vehicle.
 - Use the same lint/format conventions and Python version if the team adopts Python/FastAPI for every service. Keep service dependencies in that service's requirements file.
 - Write all Git commit messages in French, including the subject and any body. Keep them concise and describe the change, for example: `Ajouter le service de contrat` or `Corriger le calcul du montant`.
-- The Contract service is being implemented to expect JWT claims `sub` (numeric user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`, signed with `HS256`. The authentication owner must confirm or align with this token contract before integration.
+- Auth issues HS256 JWTs with `sub` (numeric user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`; the Contract service validates this format. Vehicle and Reservation still need role enforcement using the same claims.
 - Assign an owner for `compose.yaml`, the canonical schema/migrations, and the root README. Service owners should notify the team before changing a shared API field, enum, table, or environment variable.
 
 ## 4. Target repository layout
@@ -211,7 +213,7 @@ LocationVoiture/
     └── integration/
 ```
 
-This is a target, not the current repository layout. The Vehicle code is still at the root, and the other listed deployment components are not present yet.
+The repository currently keeps the Vehicle service files at the root and the other available services in their own directories. The Return service and integration-test directory are not present yet. Treat this tree as a possible future reorganization, not a prerequisite for deployment; coordinate any file moves with the Compose build contexts and Dockerfiles.
 
 ## 5. Decisions for the next team sync
 
@@ -223,7 +225,7 @@ Record an owner and decision for each item:
 4. Choose project currency and adopt fixed-precision money storage.
 5. Add and agree role enforcement for Vehicle, Reservation, and Return endpoints using the Auth token claims.
 6. Confirm the proposed Reservation/Contract extension workflow, deposit policy, and how Return triggers Contract closure.
-7. Return and frontend now have repository-level implementations; confirm the Return owner and assign owners for integration testing and ongoing Compose/schema maintenance.
+7. The frontend has a repository-level implementation; the Return service is still absent and assigned to its owner. Assign owners for integration testing and ongoing Compose/schema maintenance.
 8. Ratify the common REST paths, response/error shapes, and Reservation extension idempotency contract in section 3.2.1.
 9. Reservation-service owner: implement and document `POST /reservations/{reservation_id}/prolongations` as specified in section 3.2.1; Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
 

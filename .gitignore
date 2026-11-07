@@ -3,6 +3,7 @@ __pycache__/
 *.db
 .venv/
 venv/
+/frontend/config.js
 .env
 .env.*
 !.env.example
