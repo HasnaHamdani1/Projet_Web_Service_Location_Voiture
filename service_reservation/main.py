@@ -1,8 +1,10 @@
 
 import httpx
+import os
 from datetime import date
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .database import engine, SessionLocal, Base
@@ -45,7 +47,10 @@ def get_db():
 
 # Communication avec le service Véhicule
 def obtenir_vehicule(vehicule_id: int):
-    url = f"http://127.0.0.1:8000/vehicules/{vehicule_id}"
+    vehicle_service_url = os.getenv(
+        "VEHICLE_SERVICE_URL", "http://127.0.0.1:8000"
+    ).rstrip("/")
+    url = f"{vehicle_service_url}/vehicules/{vehicule_id}"
 
     try:
         response = httpx.get(url, timeout=5.0)
@@ -123,6 +128,15 @@ def accueil():
     return {
         "message": "Bienvenue dans le service de réservation"
     }
+
+
+@app.get("/health")
+def health(db: Session = Depends(get_db)):
+    try:
+        db.connection().exec_driver_sql("SELECT 1")
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Base de données indisponible") from exc
+    return {"status": "ok", "service": "reservation"}
 
 
 # Lister toutes les réservations

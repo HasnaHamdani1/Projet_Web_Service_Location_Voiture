@@ -23,8 +23,8 @@ These describe the files as they currently exist; they are not all deployment-re
 - The SQL dump defines Contract statuses `EN_ATTENTE`, `VALIDE`, and `CLOTURE`, defaulting to `EN_ATTENTE`. It has unique keys for `numero_contrat` and `reservation_id`.
 - The SQL dump permits Reservation statuses `EN_ATTENTE`, `CONFIRMEE`, `ANNULEE`, and `PAYEE`. `PAYEE` is not used by the current Reservation API code.
 - The SQL dump defines Return condition values `BON`, `LEGER_DOMMAGE`, and `DOMMAGE_IMPORTANT`.
-- Both current Python services still configure SQLite, not the agreed shared MySQL. Their ORM table names are plural (`vehicules`, `reservations`), while the SQL dump uses singular names (`vehicule`, `reservation`). The SQL dump also uses `montant_estime`, while the Reservation API/model exposes `prix_total`.
-- The current Vehicle and Reservation application startup creates tables with `Base.metadata.create_all`; both still configure SQLite. The repository now has a Contract service on the feature branch, including its own Dockerfile and migrations. There is still no root Compose file, Return service, or frontend. The SQL dump identifies MariaDB 10.4 as its source; the team has agreed MySQL, so choose the actual database image/version explicitly rather than assuming they are interchangeable deployment choices.
+- The Vehicle and Reservation services now accept `DATABASE_URL`; Compose points both at the shared MySQL database while direct local runs retain SQLite defaults. Their ORM mappings now use the SQL dump's singular `vehicule` and `reservation` tables; Reservation's public attribute `prix_total` maps to SQL column `montant_estime`.
+- The repository has a root Compose stack for MySQL, Vehicle, Reservation, and Contract, plus Dockerfiles for those APIs. Return, Authentication/token-issuing, and frontend services are still absent. The SQL dump identifies MariaDB 10.4 as its source; Compose currently targets MySQL 8.4.13, so keep schema compatibility in the integration checklist.
 
 ## 3. Rules to share across all service owners
 
@@ -153,7 +153,7 @@ Before switching services from SQLite, agree on one canonical MySQL schema and m
 
 1. Singular SQL table names (`vehicule`, `reservation`) vs plural ORM names (`vehicules`, `reservations`). Recommended: use the SQL dump's singular names as the starting point and update ORM mappings, or formally update the schema and all mappings in one change.
 2. SQL `montant_estime` vs Reservation API/model `prix_total`. Recommended: keep `prix_total` as the REST field and settle one database column name in the canonical migration.
-3. SQL dump source reports MariaDB; deployment requirement says MySQL. Choose and pin one MySQL image/version and verify the schema against it.
+3. SQL dump source reports MariaDB; Compose pins MySQL 8.4.13. Verify the schema import against that image and do not switch the database product/version silently.
 
 Use versioned migrations rather than relying on each service's `create_all()` at startup in deployment. Each service may own its migrations, but the team must define one ordered migration process in Compose and CI.
 
@@ -215,12 +215,12 @@ This is a target, not the current repository layout. The Vehicle code is still a
 Record an owner and decision for each item:
 
 1. Confirm the canonical Reservation paid/confirmed status (`CONFIRMEE` recommended) and whether `PAYEE` is removed or given a separate meaning.
-2. Choose the exact MySQL image/version and agree the canonical table/column names; reconcile ORM mappings with `db_location_vehicules.sql`.
+2. Confirm the canonical MySQL image/schema import works from a clean volume; reconcile any remaining mappings with `db_location_vehicules.sql`.
 3. Confirm team-wide Python/FastAPI/SQLAlchemy use (the existing services use it; the Contract owner has chosen Python).
 4. Choose project currency and adopt fixed-precision money storage.
 5. Confirm authentication owner, JWT role claims, and route permissions.
 6. Confirm the proposed Reservation/Contract extension workflow, deposit policy, and how Return triggers Contract closure.
-7. Assign owners for Compose, schema migrations, frontend, integration tests, and root documentation.
+7. Assign owners for Return, Authentication/token issuing, frontend, integration tests, and ongoing Compose/schema maintenance.
 8. Ratify the common REST paths, response/error shapes, and Reservation extension idempotency contract in section 3.2.1.
 9. Reservation-service owner: implement and document `POST /reservations/{reservation_id}/prolongations` as specified in section 3.2.1; Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
 

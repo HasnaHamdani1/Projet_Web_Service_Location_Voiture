@@ -1,14 +1,19 @@
 
+import os
 from pathlib import Path
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = f"sqlite:///{Path(__file__).resolve().parent / 'vehicules.db'}"
-
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{Path(__file__).resolve().parent / 'vehicules.db'}",
 )
+engine_options = {"pool_pre_ping": True}
+if DATABASE_URL.startswith("sqlite"):
+    engine_options["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, **engine_options)
 
 SessionLocal = sessionmaker(
     autocommit=False,

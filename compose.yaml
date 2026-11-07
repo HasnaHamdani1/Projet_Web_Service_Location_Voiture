@@ -1,0 +1,92 @@
+services:
+  mysql:
+    image: mysql:8.4.13
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-db_location_vehicules}
+      MYSQL_USER: ${MYSQL_USER:-location_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_general_ci"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db_location_vehicules.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      - ./service_contrat/migrations/002_add_date_validation.sql:/docker-entrypoint-initdb.d/002_contract_date_validation.sql:ro
+      - ./service_contrat/migrations/003_add_caution.sql:/docker-entrypoint-initdb.d/003_contract_caution.sql:ro
+      - ./service_contrat/migrations/004_add_date_cloture.sql:/docker-entrypoint-initdb.d/004_contract_date_cloture.sql:ro
+      - ./service_contrat/migrations/005_create_prolongation.sql:/docker-entrypoint-initdb.d/005_contract_extension.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  service_vehicule:
+    build:
+      context: .
+      dockerfile: Dockerfile.vehicule
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  service_reservation:
+    build:
+      context: .
+      dockerfile: service_reservation/Dockerfile
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
+      VEHICLE_SERVICE_URL: http://service_vehicule:8000
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service_vehicule:
+        condition: service_healthy
+    ports:
+      - "8002:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  service_contrat:
+    build:
+      context: .
+      dockerfile: service_contrat/Dockerfile
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
+      RESERVATION_SERVICE_URL: http://service_reservation:8000
+      RESERVATION_SERVICE_TIMEOUT_SECONDS: ${RESERVATION_SERVICE_TIMEOUT_SECONDS:-5}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service_reservation:
+        condition: service_healthy
+    ports:
+      - "8003:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

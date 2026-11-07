@@ -1,20 +1,25 @@
 
-from sqlalchemy import Column, Integer, String, Float, Date
+from sqlalchemy import BigInteger, Column, Date, Float, Integer, String
 
 from .database import Base
 
 
 class Reservation(Base):
-    __tablename__ = "reservations"
+    __tablename__ = "reservation"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        index=True,
+        autoincrement=True,
+    )
 
-    client_id = Column(Integer, nullable=False)
-    vehicule_id = Column(Integer, nullable=False)
+    client_id = Column(BigInteger, nullable=False)
+    vehicule_id = Column(BigInteger, nullable=False)
 
     date_debut = Column(Date, nullable=False)
     date_fin = Column(Date, nullable=False)
 
-    prix_total = Column(Float, nullable=False)
+    prix_total = Column("montant_estime", Float, nullable=False)
 
     statut = Column(String, default="EN_ATTENTE", nullable=False)
