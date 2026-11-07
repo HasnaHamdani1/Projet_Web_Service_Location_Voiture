@@ -36,7 +36,7 @@ FastAPI OpenAPI docs are available at `/docs` when the service is running.
 
 Copy `.env.example` values into the root Compose environment (do not commit a real `.env`). The service requires:
 
-- `DATABASE_URL`: SQLAlchemy MySQL connection string for the shared database, for example `mysql+pymysql://<user>:<password>@mysql:3306/db_location_vehicules`.
+- `DATABASE_URL`: SQLAlchemy MySQL connection string for the shared database, for example `mysql+pymysql://location_app:replace_me@mysql:3306/db_location_vehicules` (replace the dummy credentials in your local `.env`).
 - `RESERVATION_SERVICE_URL`: Reservation base URL; in Compose this should be `http://service_reservation:8000`.
 - `JWT_SECRET`: the HS256 secret shared with the token issuer.
 - `RESERVATION_SERVICE_TIMEOUT_SECONDS`: upstream timeout (defaults to 5 seconds).
