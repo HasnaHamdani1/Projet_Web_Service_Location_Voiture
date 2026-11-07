@@ -7,8 +7,10 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - An administrator creates a contract by reservation ID. The service fetches the reservation and copies its customer, vehicle, dates, and total amount. The reservation must have status `CONFIRMEE`.
 - New contracts start with the schema-defined status `EN_ATTENTE`.
 - Clients can list and retrieve only their own contracts; administrators can list all contracts.
+- The owning client validates/signs a pending contract, changing its status to `VALIDE`.
+- An administrator closes a validated contract after return, changing its status to `CLOTURE`. Return-service authentication still needs to be aligned before that service calls this endpoint directly.
 - The database unique key on `reservation_id` prevents duplicate contracts, including concurrent creation requests.
-- There is no contract-term update endpoint. Client validation/signature and closing after return are follow-up lifecycle features.
+- There is no contract-term update endpoint. After validation, only the lifecycle status can change.
 
 ## API
 
@@ -16,6 +18,8 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - `GET /contrats` - list contracts visible to the authenticated user; administrators can filter by `client_id` or `reservation_id`.
 - `GET /contrats/{contrat_id}` - retrieve a contract (clients can retrieve only their own).
 - `POST /contrats` - administrator creates from `{"reservation_id": 123}`; returns `201` and the contract.
+- `POST /contrats/{contrat_id}/validation` - owning client validates/signs a pending contract.
+- `POST /contrats/{contrat_id}/cloture` - administrator closes a validated contract.
 
 FastAPI OpenAPI docs are available at `/docs` when the service is running.
 

@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from .auth import Principal, get_current_principal, require_admin
+from .auth import Principal, get_current_principal, require_admin, require_client
 from .database import get_db
 from .enums import ContractStatus, UserRole
 from .models import Contract
@@ -154,4 +154,84 @@ def consulter_contrat(
     ):
         # Do not disclose whether another customer's contract exists.
         raise HTTPException(status_code=404, detail="Contrat introuvable")
+    return contrat
+
+
+@app.post(
+    "/contrats/{contrat_id}/validation",
+    response_model=ContractRead,
+    tags=["contrats"],
+)
+def valider_contrat(
+    contrat_id: int,
+    db: Session = Depends(get_db),
+    client: Principal = Depends(require_client),
+):
+    contrat = trouver_contrat(db, contrat_id)
+    if contrat.client_id != client.user_id:
+        raise HTTPException(status_code=404, detail="Contrat introuvable")
+    if contrat.statut != ContractStatus.EN_ATTENTE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Seul un contrat en attente peut être validé",
+        )
+
+    updated = (
+        db.query(Contract)
+        .filter(
+            Contract.id == contrat_id,
+            Contract.statut == ContractStatus.EN_ATTENTE,
+        )
+        .update(
+            {Contract.statut: ContractStatus.VALIDE},
+            synchronize_session=False,
+        )
+    )
+    if updated != 1:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Le contrat a déjà changé d'état",
+        )
+    db.commit()
+    db.refresh(contrat)
+    return contrat
+
+
+@app.post(
+    "/contrats/{contrat_id}/cloture",
+    response_model=ContractRead,
+    tags=["contrats"],
+)
+def cloturer_contrat(
+    contrat_id: int,
+    db: Session = Depends(get_db),
+    _administrateur: Principal = Depends(require_admin),
+):
+    contrat = trouver_contrat(db, contrat_id)
+    if contrat.statut != ContractStatus.VALIDE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Seul un contrat validé peut être clôturé",
+        )
+
+    updated = (
+        db.query(Contract)
+        .filter(
+            Contract.id == contrat_id,
+            Contract.statut == ContractStatus.VALIDE,
+        )
+        .update(
+            {Contract.statut: ContractStatus.CLOTURE},
+            synchronize_session=False,
+        )
+    )
+    if updated != 1:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Le contrat a déjà changé d'état",
+        )
+    db.commit()
+    db.refresh(contrat)
     return contrat
