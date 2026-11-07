@@ -58,6 +58,8 @@ Build from the repository root so Docker can copy the service directory:
 docker build -f service_contrat/Dockerfile -t service_contrat .
 ```
 
+The container runs as the unprivileged `appuser` account.
+
 Add the following service entry to the team's root `compose.yaml` (the `mysql` and `service_reservation` services are owned/configured at the project level):
 
 ```yaml
