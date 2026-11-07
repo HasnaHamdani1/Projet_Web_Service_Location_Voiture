@@ -8,7 +8,7 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - New contracts start with the schema-defined status `EN_ATTENTE`.
 - An administrator records the deposit once, before client validation; the amount and UTC recording time are retained on the contract.
 - Clients can list and retrieve only their own contracts; administrators can list all contracts.
-- The owning client validates/signs a pending contract, changing its status to `VALIDE`.
+- Before validation, the service re-fetches the reservation and confirms it is still `CONFIRMEE` and matches the contract snapshot. The owning client can then validate/sign, changing its status to `VALIDE`.
 - Validation records `date_validation` in UTC for traceability.
 - An administrator closes a validated contract after return, changing its status to `CLOTURE`. Return-service authentication still needs to be aligned before that service calls this endpoint directly.
 - Closure records `date_cloture` in UTC for auditability.

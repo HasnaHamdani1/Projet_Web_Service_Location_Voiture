@@ -209,6 +209,30 @@ def valider_contrat(
             detail="Seul un contrat en attente peut être validé",
         )
 
+    if contrat.reservation_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Le contrat n'est lié à aucune réservation",
+        )
+    reservation = get_reservation(contrat.reservation_id)
+    if reservation.statut != "CONFIRMEE":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La réservation n'est plus confirmée; le contrat ne peut pas être validé",
+        )
+    snapshot_matches = (
+        reservation.client_id == contrat.client_id
+        and reservation.vehicule_id == contrat.vehicule_id
+        and reservation.date_debut == contrat.periode_prise
+        and reservation.date_fin == contrat.periode_fin
+        and reservation.prix_total == Decimal(str(contrat.montant_total))
+    )
+    if not snapshot_matches:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Les données de la réservation ont changé depuis la création du contrat",
+        )
+
     updated = (
         db.query(Contract)
         .filter(
