@@ -4,6 +4,7 @@ from database import engine, Base, SessionLocal
 from models import Vehicule
 from pydantic import BaseModel, Field
 from enum import Enum
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 
@@ -34,6 +35,7 @@ class VehiculeCreate(BaseModel):
     immatriculation: str
     marque: str
     modele: str
+    annee: int = Field(ge=1886, le=2100)
     prix_par_jour: float = Field(gt=0)
     statut: StatutVehicule = StatutVehicule.DISPONIBLE
 
@@ -42,6 +44,7 @@ class VehiculeUpdate(BaseModel):
     immatriculation: str
     marque: str
     modele: str
+    annee: int = Field(ge=1886, le=2100)
     prix_par_jour: float = Field(gt=0)
     statut: StatutVehicule
 
@@ -50,6 +53,15 @@ class VehiculeUpdate(BaseModel):
 @app.get("/")
 def accueil():
     return {"message": "Bienvenue dans le Service Véhicule"}
+
+
+@app.get("/health")
+def health(db: Session = Depends(get_db)):
+    try:
+        db.connection().exec_driver_sql("SELECT 1")
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Base de données indisponible") from exc
+    return {"status": "ok", "service": "vehicule"}
 
 
 # Récupérer tous les véhicules
