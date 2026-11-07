@@ -121,7 +121,7 @@ Extensions cannot safely be implemented by Contract alone: only Reservation owns
 4. Reservation returns `reservation_id`, `date_fin_precedente`, `date_fin`, `montant_supplementaire`, and a unique `prolongation_id`. Contract stores an append-only annex referencing that ID and returns 201 with the annex. The original validated contract terms remain unchanged.
 5. If Contract persistence fails after Reservation succeeds, retry with the same `Idempotency-Key`; Reservation must return the original result so Contract can finish persisting the annex without extending twice.
 
-The Contract side now follows this proposed interface, but the Reservation endpoint is still **not implemented or ratified**. Reservation needs to implement its endpoint and idempotency storage before end-to-end extension works. No service may approve an extension using only a read-only availability check, because another booking could win the race.
+The Contract side now follows this proposed interface, but the Reservation endpoint is still **not implemented or ratified**. The Reservation-service owner is responsible for implementing the endpoint and its idempotency storage before end-to-end extension works. The Contract-service owner will leave `service_reservation/` unchanged and integrate against that endpoint when it is available. No service may approve an extension using only a read-only availability check, because another booking could win the race.
 
 ### 3.3 Shared data types and business meaning
 
@@ -222,5 +222,6 @@ Record an owner and decision for each item:
 6. Confirm the proposed Reservation/Contract extension workflow, deposit policy, and how Return triggers Contract closure.
 7. Assign owners for Compose, schema migrations, frontend, integration tests, and root documentation.
 8. Ratify the common REST paths, response/error shapes, and Reservation extension idempotency contract in section 3.2.1.
+9. Reservation-service owner: implement and document `POST /reservations/{reservation_id}/prolongations` as specified in section 3.2.1; Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
 
 Once these are confirmed, update this file and implement against these shared contracts. Changes to API fields, statuses, or schema should be coordinated before merging.
