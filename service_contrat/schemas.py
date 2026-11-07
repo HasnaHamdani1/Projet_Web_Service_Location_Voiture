@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -37,6 +37,7 @@ class ContractRead(BaseModel):
     numero_contrat: str
     date_generation: date
     statut: ContractStatus
+    date_validation: datetime | None
     periode_prise: date
     periode_fin: date
     montant_total: float

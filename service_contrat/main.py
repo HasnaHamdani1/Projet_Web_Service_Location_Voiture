@@ -3,6 +3,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -183,7 +184,10 @@ def valider_contrat(
             Contract.statut == ContractStatus.EN_ATTENTE,
         )
         .update(
-            {Contract.statut: ContractStatus.VALIDE},
+            {
+                Contract.statut: ContractStatus.VALIDE,
+                Contract.date_validation: func.utc_timestamp(),
+            },
             synchronize_session=False,
         )
     )
