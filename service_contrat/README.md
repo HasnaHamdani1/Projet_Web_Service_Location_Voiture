@@ -1,0 +1,49 @@
+# Service Contrat
+
+Service REST Python/FastAPI responsible for creating and managing rental contracts. It uses the shared MySQL database and reads reservation details through the Reservation API.
+
+## First feature slice: create and consult
+
+- An administrator creates a contract by reservation ID. The service fetches the reservation and copies its customer, vehicle, dates, and total amount. The reservation must have status `CONFIRMEE`.
+- New contracts start with the schema-defined status `EN_ATTENTE`.
+- Clients can list and retrieve only their own contracts; administrators can list all contracts.
+- The database unique key on `reservation_id` prevents duplicate contracts, including concurrent creation requests.
+- There is no contract-term update endpoint. Client validation/signature and closing after return are follow-up lifecycle features.
+
+## API
+
+- `GET /health` - database-backed health check.
+- `GET /contrats` - list contracts visible to the authenticated user; administrators can filter by `client_id` or `reservation_id`.
+- `GET /contrats/{contrat_id}` - retrieve a contract (clients can retrieve only their own).
+- `POST /contrats` - administrator creates from `{"reservation_id": 123}`; returns `201` and the contract.
+
+FastAPI OpenAPI docs are available at `/docs` when the service is running.
+
+## Configuration
+
+Copy `.env.example` values into the root Compose environment (do not commit a real `.env`). The service requires:
+
+- `DATABASE_URL`: SQLAlchemy MySQL connection string for the shared database, for example `mysql+pymysql://<user>:<password>@mysql:3306/db_location_vehicules`.
+- `RESERVATION_SERVICE_URL`: Reservation base URL; in Compose this should be `http://service_reservation:8000`.
+- `JWT_SECRET`: the HS256 secret shared with the token issuer.
+- `RESERVATION_SERVICE_TIMEOUT_SECONDS`: upstream timeout (defaults to 5 seconds).
+
+Protected routes expect a bearer JWT with claims `sub` (positive numeric user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`. The token issuer and every service must agree on this format and secret. The service does not issue tokens.
+
+## Database
+
+The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
+
+## Run
+
+Build from the repository root so Docker can copy the service directory:
+
+```powershell
+docker build -f service_contrat/Dockerfile -t service_contrat .
+```
+
+In a local Python environment, install `requirements.txt`, set the environment variables above, then run:
+
+```powershell
+uvicorn service_contrat.main:app --reload
+```
