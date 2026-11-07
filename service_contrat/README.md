@@ -40,6 +40,7 @@ Copy `.env.example` values into the root Compose environment (do not commit a re
 - `RESERVATION_SERVICE_URL`: Reservation base URL; in Compose this should be `http://service_reservation:8000`.
 - `JWT_SECRET`: the HS256 secret shared with the token issuer.
 - `RESERVATION_SERVICE_TIMEOUT_SECONDS`: upstream timeout (defaults to 5 seconds).
+- `CORS_ORIGINS`: comma-separated browser origins allowed to call this API; set this to the deployed frontend origin(s).
 
 Protected routes expect a bearer JWT with claims `sub` (positive numeric user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`. The token issuer and every service must agree on this format and secret. The service does not issue tokens.
 
@@ -70,6 +71,7 @@ services:
       RESERVATION_SERVICE_URL: http://service_reservation:8000
       RESERVATION_SERVICE_TIMEOUT_SECONDS: ${RESERVATION_SERVICE_TIMEOUT_SECONDS:-5}
       JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     depends_on:
       mysql:
         condition: service_healthy
