@@ -63,6 +63,28 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  service_auth:
+    build:
+      context: .
+      dockerfile: service_auth/Dockerfile
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_TTL_MINUTES: ${JWT_TTL_MINUTES:-60}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8004:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
   service_contrat:
     build:
       context: .
