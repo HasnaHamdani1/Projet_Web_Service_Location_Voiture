@@ -12,7 +12,7 @@ from .database import get_db
 from .enums import ContractStatus, UserRole
 from .models import Contract
 from .reservation_client import get_reservation
-from .schemas import ContractCreate, ContractRead
+from .schemas import ContractCreate, ContractRead, DepositCreate
 
 
 app = FastAPI(
@@ -155,6 +155,38 @@ def consulter_contrat(
     ):
         # Do not disclose whether another customer's contract exists.
         raise HTTPException(status_code=404, detail="Contrat introuvable")
+    return contrat
+
+
+@app.post("/contrats/{contrat_id}/caution", response_model=ContractRead, tags=["contrats"])
+def enregistrer_caution(
+    contrat_id: int,
+    demande: DepositCreate,
+    db: Session = Depends(get_db),
+    _administrateur: Principal = Depends(require_admin),
+):
+    contrat = trouver_contrat(db, contrat_id)
+    if contrat.statut != ContractStatus.EN_ATTENTE:
+        raise HTTPException(status_code=409, detail="La caution doit être enregistrée avant la validation")
+    if contrat.montant_caution is not None:
+        raise HTTPException(status_code=409, detail="Une caution est déjà enregistrée")
+
+    updated = db.query(Contract).filter(
+        Contract.id == contrat_id,
+        Contract.statut == ContractStatus.EN_ATTENTE,
+        Contract.montant_caution.is_(None),
+    ).update(
+        {
+            Contract.montant_caution: float(demande.montant_caution),
+            Contract.date_enregistrement_caution: func.utc_timestamp(),
+        },
+        synchronize_session=False,
+    )
+    if updated != 1:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Le contrat a déjà changé d'état")
+    db.commit()
+    db.refresh(contrat)
     return contrat
 
 

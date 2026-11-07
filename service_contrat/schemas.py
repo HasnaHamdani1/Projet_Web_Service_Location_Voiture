@@ -10,6 +10,10 @@ class ContractCreate(BaseModel):
     reservation_id: int = Field(gt=0)
 
 
+class DepositCreate(BaseModel):
+    montant_caution: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
 class ReservationSnapshot(BaseModel):
     """The stable subset of the current Reservation GET response we consume."""
 
@@ -38,6 +42,8 @@ class ContractRead(BaseModel):
     date_generation: date
     statut: ContractStatus
     date_validation: datetime | None
+    montant_caution: float | None
+    date_enregistrement_caution: datetime | None
     periode_prise: date
     periode_fin: date
     montant_total: float

@@ -6,6 +6,7 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 
 - An administrator creates a contract by reservation ID. The service fetches the reservation and copies its customer, vehicle, dates, and total amount. The reservation must have status `CONFIRMEE`.
 - New contracts start with the schema-defined status `EN_ATTENTE`.
+- An administrator records the deposit once, before client validation; the amount and UTC recording time are retained on the contract.
 - Clients can list and retrieve only their own contracts; administrators can list all contracts.
 - The owning client validates/signs a pending contract, changing its status to `VALIDE`.
 - Validation records `date_validation` in UTC for traceability.
@@ -19,6 +20,7 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - `GET /contrats` - list contracts visible to the authenticated user; administrators can filter by `client_id` or `reservation_id`.
 - `GET /contrats/{contrat_id}` - retrieve a contract (clients can retrieve only their own).
 - `POST /contrats` - administrator creates from `{"reservation_id": 123}`; returns `201` and the contract.
+- `POST /contrats/{contrat_id}/caution` - administrator records `{"montant_caution": 500.00}` while the contract is pending.
 - `POST /contrats/{contrat_id}/validation` - owning client validates/signs a pending contract.
 - `POST /contrats/{contrat_id}/cloture` - administrator closes a validated contract.
 
@@ -37,7 +39,7 @@ Protected routes expect a bearer JWT with claims `sub` (positive numeric user ID
 
 ## Database
 
-The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table, then apply `migrations/002_add_date_validation.sql`. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
+The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table, then apply migrations `002` and `003`. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
 
 ## Run
 
