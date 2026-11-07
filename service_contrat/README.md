@@ -12,6 +12,7 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - Validation records `date_validation` in UTC for traceability.
 - An administrator closes a validated contract after return, changing its status to `CLOTURE`. Return-service authentication still needs to be aligned before that service calls this endpoint directly.
 - Closure records `date_cloture` in UTC for auditability.
+- Lifecycle actions log contract/actor IDs and status-changing events without logging personal or deposit amounts.
 - The database unique key on `reservation_id` prevents duplicate contracts, including concurrent creation requests.
 - There is no contract-term update endpoint. After validation, only the lifecycle status can change.
 

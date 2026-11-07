@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+import logging
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
@@ -23,6 +24,7 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+logger = logging.getLogger("service_contrat")
 
 
 def trouver_contrat(db: Session, contrat_id: int) -> Contract:
@@ -109,6 +111,12 @@ def creer_contrat(
         raise
 
     db.refresh(contrat)
+    logger.info(
+        "contract_created contract_id=%s reservation_id=%s actor_user_id=%s",
+        contrat.id,
+        contrat.reservation_id,
+        _administrateur.user_id,
+    )
     return contrat
 
 
@@ -210,6 +218,11 @@ def enregistrer_caution(
         raise HTTPException(status_code=409, detail="Le contrat a déjà changé d'état")
     db.commit()
     db.refresh(contrat)
+    logger.info(
+        "contract_deposit_recorded contract_id=%s actor_user_id=%s",
+        contrat.id,
+        _administrateur.user_id,
+    )
     return contrat
 
 
@@ -278,6 +291,11 @@ def valider_contrat(
         )
     db.commit()
     db.refresh(contrat)
+    logger.info(
+        "contract_validated contract_id=%s actor_user_id=%s",
+        contrat.id,
+        client.user_id,
+    )
     return contrat
 
 
@@ -320,4 +338,9 @@ def cloturer_contrat(
         )
     db.commit()
     db.refresh(contrat)
+    logger.info(
+        "contract_closed contract_id=%s actor_user_id=%s",
+        contrat.id,
+        _administrateur.user_id,
+    )
     return contrat
