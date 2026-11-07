@@ -1,6 +1,6 @@
 # LocationVoiture
 
-Distributed car-rental application. The current Compose stack runs the Vehicle, Reservation, and Contract APIs against one MySQL database.
+Distributed car-rental application. The current Compose stack runs the Vehicle, Reservation, Contract, and Authentication APIs against one MySQL database.
 
 ## Start the available services
 
@@ -16,14 +16,15 @@ Distributed car-rental application. The current Compose stack runs the Vehicle, 
    - Vehicle: `http://localhost:8001/docs`
    - Reservation: `http://localhost:8002/docs`
    - Contract: `http://localhost:8003/docs`
+   - Authentication: `http://localhost:8004/docs`
    - MySQL is available to containers at `mysql:3306`; it is not published to the host.
 
 Compose initializes a new MySQL volume from `db_location_vehicules.sql`, then applies Contract migrations 002-005. Initialization scripts run only when MySQL creates an empty data directory. Existing volumes need the unapplied migrations run manually before deploying a newer Contract service.
 
 ## Current scope and integration gaps
 
-- The Compose stack includes the services currently present in the repository. Return, Authentication/token-issuing, and frontend services have not been added yet.
-- Contract endpoints require JWTs signed with `JWT_SECRET`, with `sub` as a numeric user ID string and `role` as `CLIENT` or `ADMINISTRATEUR`. There is not yet an Auth API in this repository to issue those tokens.
+- The Compose stack includes the services currently present in the repository. Return and frontend services have not been added yet.
+- Contract endpoints require JWTs signed with `JWT_SECRET`, with `sub` as a numeric user ID string and `role` as `CLIENT` or `ADMINISTRATEUR`. The Auth API issues this format. Register customers at `POST /auth/inscription` and obtain tokens at `POST /auth/token`. Create the first administrator interactively with `docker compose exec service_auth python -m service_auth.create_admin`.
 - Contract extension annexes are implemented, but end-to-end extensions wait for the Reservation owner to implement `POST /reservations/{reservation_id}/prolongations` with atomic availability checks and idempotency, as specified in [TEAM_SYNC.md](TEAM_SYNC.md).
 - Vehicle and Reservation retain SQLite defaults for direct local development. Compose supplies the shared MySQL `DATABASE_URL` to both services.
 - The SQL dump was generated from MariaDB; the Compose stack uses the MySQL 8.4 LTS image. If the initialization import fails due to MariaDB-specific SQL, update the canonical schema/migrations rather than switching the Compose database silently.

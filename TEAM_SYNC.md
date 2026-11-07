@@ -24,7 +24,7 @@ These describe the files as they currently exist; they are not all deployment-re
 - The SQL dump permits Reservation statuses `EN_ATTENTE`, `CONFIRMEE`, `ANNULEE`, and `PAYEE`. `PAYEE` is not used by the current Reservation API code.
 - The SQL dump defines Return condition values `BON`, `LEGER_DOMMAGE`, and `DOMMAGE_IMPORTANT`.
 - The Vehicle and Reservation services now accept `DATABASE_URL`; Compose points both at the shared MySQL database while direct local runs retain SQLite defaults. Their ORM mappings now use the SQL dump's singular `vehicule` and `reservation` tables; Reservation's public attribute `prix_total` maps to SQL column `montant_estime`.
-- The repository has a root Compose stack for MySQL, Vehicle, Reservation, and Contract, plus Dockerfiles for those APIs. Return, Authentication/token-issuing, and frontend services are still absent. The SQL dump identifies MariaDB 10.4 as its source; Compose currently targets MySQL 8.4.13, so keep schema compatibility in the integration checklist.
+- The repository has a root Compose stack for MySQL, Vehicle, Reservation, Contract, and Authentication, plus Dockerfiles for those APIs. Return and frontend services are still absent. The SQL dump identifies MariaDB 10.4 as its source; Compose currently targets MySQL 8.4.13, so keep schema compatibility in the integration checklist.
 
 ## 3. Rules to share across all service owners
 
@@ -83,6 +83,9 @@ The routes below distinguish **implemented in the repository** from **proposed f
 | Reservation | `POST /reservations` | Create reservation | Implemented |
 | Reservation | `POST /reservations/{reservation_id}/paiement` | Simulate payment; successful result sets `CONFIRMEE` | Implemented |
 | Reservation | `PUT /reservations/{reservation_id}/annulation` | Cancel an eligible reservation | Implemented |
+| Authentication | `POST /auth/inscription` | Register a customer account | Implemented in `service_auth/` |
+| Authentication | `POST /auth/token` | Verify credentials and issue JWT | Implemented in `service_auth/` |
+| Authentication | `GET /auth/me` | Return authenticated account profile | Implemented in `service_auth/` |
 | Contract | `POST /contrats` | Admin creates from `{"reservation_id": 123}` | Implemented on Contract branch |
 | Contract | `GET /contrats` | List contracts, scoped to client or admin | Implemented on Contract branch |
 | Contract | `GET /contrats/{contrat_id}` | Get contract by ID, ownership-scoped | Implemented on Contract branch |
@@ -145,7 +148,7 @@ The Contract schema currently allows a null `reservation_id`, although the busin
 
 ### 3.5 Authentication and authorization
 
-The project brief requires JWT authentication and client/admin roles, but the current code does not implement them. Agree who issues tokens, the role claim names, how services validate tokens, and which actions require each role. Recommended minimum: admin manages vehicles and creates/validates contracts; a client can access only their own reservations and sign their contract; return processing is admin-only. Keep secrets in environment variables, never in Git.
+The Auth service now registers clients and issues HS256 JWTs with `sub` (user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`, matching the Contract service validator. The first administrator is created with the interactive `service_auth.create_admin` command; there is no public admin-registration route. Keep `JWT_SECRET` in the ignored local `.env`, never in Git. Other services should reuse this claim/role contract for protected routes.
 
 ### 3.6 MySQL schema and migrations
 
@@ -218,9 +221,9 @@ Record an owner and decision for each item:
 2. Confirm the canonical MySQL image/schema import works from a clean volume; reconcile any remaining mappings with `db_location_vehicules.sql`.
 3. Confirm team-wide Python/FastAPI/SQLAlchemy use (the existing services use it; the Contract owner has chosen Python).
 4. Choose project currency and adopt fixed-precision money storage.
-5. Confirm authentication owner, JWT role claims, and route permissions.
+5. Add and agree role enforcement for Vehicle, Reservation, and Return endpoints using the Auth token claims.
 6. Confirm the proposed Reservation/Contract extension workflow, deposit policy, and how Return triggers Contract closure.
-7. Assign owners for Return, Authentication/token issuing, frontend, integration tests, and ongoing Compose/schema maintenance.
+7. Assign owners for Return, frontend, integration tests, and ongoing Compose/schema maintenance.
 8. Ratify the common REST paths, response/error shapes, and Reservation extension idempotency contract in section 3.2.1.
 9. Reservation-service owner: implement and document `POST /reservations/{reservation_id}/prolongations` as specified in section 3.2.1; Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
 
