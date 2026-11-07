@@ -90,7 +90,8 @@ The routes below distinguish **implemented in the repository** from **proposed f
 | Contract | `POST /contrats/{contrat_id}/caution` | Admin records `{"montant_caution": 500.00}` before signature | Implemented on Contract branch |
 | Contract | `POST /contrats/{contrat_id}/validation` | Owning client signs/validates; status becomes `VALIDE` | Implemented on Contract branch |
 | Contract | `POST /contrats/{contrat_id}/cloture` | Admin closes validated contract after return | Implemented on Contract branch |
-| Contract | `POST /contrats/{contrat_id}/prolongations` | Request a rental extension | Proposed; requires Reservation support below |
+| Contract | `POST /contrats/{contrat_id}/prolongations` | Admin extends a validated contract and stores an annex | Implemented on Contract branch; requires Reservation support below |
+| Contract | `GET /contrats/{contrat_id}/prolongations` | List extension annexes, ownership-scoped | Implemented on Contract branch |
 
 **Reservation read response** is a direct JSON object, not wrapped in a `reservation` property:
 
@@ -120,7 +121,7 @@ Extensions cannot safely be implemented by Contract alone: only Reservation owns
 4. Reservation returns `reservation_id`, `date_fin_precedente`, `date_fin`, `montant_supplementaire`, and a unique `prolongation_id`. Contract stores an append-only annex referencing that ID and returns 201 with the annex. The original validated contract terms remain unchanged.
 5. If Contract persistence fails after Reservation succeeds, retry with the same `Idempotency-Key`; Reservation must return the original result so Contract can finish persisting the annex without extending twice.
 
-This extension interface is a **proposal**, not an existing implementation or confirmed team decision. Reservation needs to implement its endpoint and idempotency storage before Contract exposes the operation. No service may approve an extension using only a read-only availability check, because another booking could win the race.
+The Contract side now follows this proposed interface, but the Reservation endpoint is still **not implemented or ratified**. Reservation needs to implement its endpoint and idempotency storage before end-to-end extension works. No service may approve an extension using only a read-only availability check, because another booking could win the race.
 
 ### 3.3 Shared data types and business meaning
 

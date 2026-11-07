@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from .auth import Principal, get_current_principal, require_admin, require_client
 from .database import get_db
 from .enums import ContractStatus, UserRole
+from .extensions import router as extensions_router
 from .models import Contract
 from .reservation_client import get_reservation
 from .schemas import ContractCreate, ContractRead, DepositCreate
@@ -24,6 +25,7 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+app.include_router(extensions_router)
 logger = logging.getLogger("service_contrat")
 
 

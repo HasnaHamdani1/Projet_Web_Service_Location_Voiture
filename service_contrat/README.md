@@ -12,6 +12,7 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - Validation records `date_validation` in UTC for traceability.
 - An administrator closes a validated contract after return, changing its status to `CLOTURE`. Return-service authentication still needs to be aligned before that service calls this endpoint directly.
 - Closure records `date_cloture` in UTC for auditability.
+- An administrator can append an extension annex to a validated contract. The signed contract dates remain unchanged; Reservation must atomically check and apply the extension.
 - Lifecycle actions log contract/actor IDs and status-changing events without logging personal or deposit amounts.
 - The database unique key on `reservation_id` prevents duplicate contracts, including concurrent creation requests.
 - There is no contract-term update endpoint. After validation, only the lifecycle status can change.
@@ -26,6 +27,8 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - `POST /contrats/{contrat_id}/caution` - administrator records `{"montant_caution": 500.00}` while the contract is pending.
 - `POST /contrats/{contrat_id}/validation` - owning client validates/signs a pending contract.
 - `POST /contrats/{contrat_id}/cloture` - administrator closes a validated contract.
+- `POST /contrats/{contrat_id}/prolongations` - administrator extends through Reservation; requires `Idempotency-Key` UUID and body `{"nouvelle_date_fin":"YYYY-MM-DD"}`.
+- `GET /contrats/{contrat_id}/prolongations` - list extension annexes visible to the caller.
 
 FastAPI OpenAPI docs are available at `/docs` when the service is running.
 
@@ -42,7 +45,9 @@ Protected routes expect a bearer JWT with claims `sub` (positive numeric user ID
 
 ## Database
 
-The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table, then apply migrations `002`, `003`, and `004`. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
+The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table, then apply migrations `002` through `005`. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
+
+The extension endpoint depends on `POST /reservations/{id}/prolongations` with atomic conflict checking and idempotency support. Until Reservation implements that endpoint, extension requests cannot complete and return an upstream error.
 
 ## Run
 

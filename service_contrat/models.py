@@ -61,3 +61,27 @@ class Contract(Base):
         ForeignKey("vehicule.id", name="fk_contrat_vehicule"),
         nullable=False,
     )
+
+
+class ContractExtension(Base):
+    """Append-only extension annex; validated contract terms stay unchanged."""
+
+    __tablename__ = "prolongation"
+
+    id = Column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    contrat_id = Column(
+        BigInteger,
+        ForeignKey("contrat.id", name="fk_prolongation_contrat"),
+        nullable=False,
+        index=True,
+    )
+    reservation_prolongation_id = Column(BigInteger, nullable=False, unique=True)
+    idempotency_key = Column(String(36), nullable=False, unique=True)
+    date_fin_precedente = Column(Date, nullable=False)
+    date_fin = Column(Date, nullable=False)
+    montant_supplementaire = Column(Float, nullable=False)
+    date_creation = Column(DateTime, nullable=False)
