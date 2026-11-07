@@ -244,6 +244,11 @@ def valider_contrat(
             status_code=status.HTTP_409_CONFLICT,
             detail="Seul un contrat en attente peut être validé",
         )
+    if contrat.montant_caution is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La caution doit être enregistrée avant la validation du contrat",
+        )
 
     if contrat.reservation_id is None:
         raise HTTPException(

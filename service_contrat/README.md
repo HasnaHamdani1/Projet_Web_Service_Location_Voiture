@@ -6,7 +6,7 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 
 - An administrator creates a contract by reservation ID. The service fetches the reservation and copies its customer, vehicle, dates, and total amount. The reservation must have status `CONFIRMEE`.
 - New contracts start with the schema-defined status `EN_ATTENTE`.
-- An administrator records the deposit once, before client validation; the amount and UTC recording time are retained on the contract.
+- An administrator records the deposit once, before client validation; the amount and UTC recording time are retained on the contract. Validation is rejected until the deposit is recorded.
 - Clients can list and retrieve only their own contracts; administrators can list all contracts.
 - Before validation, the service re-fetches the reservation and confirms it is still `CONFIRMEE` and matches the contract snapshot. The owning client can then validate/sign, changing its status to `VALIDE`.
 - Validation records `date_validation` in UTC for traceability.
