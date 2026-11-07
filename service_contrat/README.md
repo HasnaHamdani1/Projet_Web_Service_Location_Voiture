@@ -20,6 +20,7 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 - `GET /health` - database-backed health check.
 - `GET /contrats` - list contracts visible to the authenticated user; administrators can filter by `client_id` or `reservation_id`.
 - `GET /contrats/{contrat_id}` - retrieve a contract (clients can retrieve only their own).
+- `GET /contrats/numero/{numero_contrat}` - retrieve a contract by its unique reference (clients can retrieve only their own).
 - `POST /contrats` - administrator creates from `{"reservation_id": 123}`; returns `201` and the contract.
 - `POST /contrats/{contrat_id}/caution` - administrator records `{"montant_caution": 500.00}` while the contract is pending.
 - `POST /contrats/{contrat_id}/validation` - owning client validates/signs a pending contract.

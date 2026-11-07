@@ -141,6 +141,29 @@ def lister_contrats(
 
 
 @app.get(
+    "/contrats/numero/{numero_contrat}",
+    response_model=ContractRead,
+    tags=["contrats"],
+)
+def consulter_contrat_par_numero(
+    numero_contrat: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_current_principal),
+):
+    contrat = (
+        db.query(Contract)
+        .filter(Contract.numero_contrat == numero_contrat)
+        .first()
+    )
+    if contrat is None or (
+        principal.role == UserRole.CLIENT
+        and contrat.client_id != principal.user_id
+    ):
+        raise HTTPException(status_code=404, detail="Contrat introuvable")
+    return contrat
+
+
+@app.get(
     "/contrats/{contrat_id}", response_model=ContractRead, tags=["contrats"]
 )
 def consulter_contrat(
