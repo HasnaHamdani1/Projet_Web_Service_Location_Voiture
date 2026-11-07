@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from .auth import Principal, get_current_principal, require_admin
 from .database import get_db
 from .enums import ContractStatus, UserRole
-from .main_helpers import trouver_contrat
 from .models import Contract, ContractExtension
 from .reservation_client import extend_reservation
 from .schemas import ExtensionCreate, ExtensionRead
