@@ -24,7 +24,7 @@ These describe the files as they currently exist; they are not all deployment-re
 - The SQL dump permits Reservation statuses `EN_ATTENTE`, `CONFIRMEE`, `ANNULEE`, and `PAYEE`. `PAYEE` is not used by the current Reservation API code.
 - The SQL dump defines Return condition values `BON`, `LEGER_DOMMAGE`, and `DOMMAGE_IMPORTANT`.
 - Both current Python services still configure SQLite, not the agreed shared MySQL. Their ORM table names are plural (`vehicules`, `reservations`), while the SQL dump uses singular names (`vehicule`, `reservation`). The SQL dump also uses `montant_estime`, while the Reservation API/model exposes `prix_total`.
-- The current application startup creates tables with `Base.metadata.create_all`. The repository has no Compose file, service Dockerfiles, Contract service, Return service, or frontend yet. The SQL dump identifies MariaDB 10.4 as its source; the team has agreed MySQL, so choose the actual database image/version explicitly rather than assuming they are interchangeable deployment choices.
+- The current Vehicle and Reservation application startup creates tables with `Base.metadata.create_all`; both still configure SQLite. The repository now has a Contract service on the feature branch, including its own Dockerfile and migrations. There is still no root Compose file, Return service, or frontend. The SQL dump identifies MariaDB 10.4 as its source; the team has agreed MySQL, so choose the actual database image/version explicitly rather than assuming they are interchangeable deployment choices.
 
 ## 3. Rules to share across all service owners
 
@@ -67,6 +67,61 @@ GET /reservations/{reservation_id}
 This is illustrative of the current model; add explicit Pydantic response schemas so the shape is guaranteed and documented. A missing reservation returns 404. For Contract creation, accept a `reservation_id`, fetch this endpoint, and use the returned details; do not accept a caller-supplied price or customer/vehicle values that could disagree with Reservation.
 
 Standardize errors: use 400/422 for invalid input, 401 for missing or invalid authentication, 403 for insufficient role, 404 for missing records, 409 for duplicate/conflicting state, and 503 when a required service is unavailable. Agree on one JSON error shape and apply it consistently. Keep the current French route style unless the team chooses and migrates to a versioned prefix together.
+
+### 3.2.1 REST route agreement
+
+The routes below distinguish **implemented in the repository** from **proposed for team adoption**. Existing paths are the compatibility baseline. New routes should use the same French names, JSON field names, and ISO date format. Unless the team decides to add `/api/v1` everywhere in one coordinated change, keep paths unprefixed as they are now.
+
+| Service | Method and path | Purpose / request | Current status |
+|---|---|---|---|
+| Vehicle | `GET /vehicules` | List vehicles | Implemented |
+| Vehicle | `GET /vehicules/{vehicule_id}` | Get one vehicle | Implemented |
+| Vehicle | `POST /vehicules` | Create vehicle | Implemented |
+| Vehicle | `PUT /vehicules/{vehicule_id}` | Replace vehicle data | Implemented |
+| Vehicle | `DELETE /vehicules/{vehicule_id}` | Delete vehicle | Implemented |
+| Reservation | `GET /reservations/{reservation_id}` | Canonical reservation read used by Contract | Implemented |
+| Reservation | `POST /reservations` | Create reservation | Implemented |
+| Reservation | `POST /reservations/{reservation_id}/paiement` | Simulate payment; successful result sets `CONFIRMEE` | Implemented |
+| Reservation | `PUT /reservations/{reservation_id}/annulation` | Cancel an eligible reservation | Implemented |
+| Contract | `POST /contrats` | Admin creates from `{"reservation_id": 123}` | Implemented on Contract branch |
+| Contract | `GET /contrats` | List contracts, scoped to client or admin | Implemented on Contract branch |
+| Contract | `GET /contrats/{contrat_id}` | Get contract by ID, ownership-scoped | Implemented on Contract branch |
+| Contract | `GET /contrats/numero/{numero_contrat}` | Get contract by unique number, ownership-scoped | Implemented on Contract branch |
+| Contract | `POST /contrats/{contrat_id}/caution` | Admin records `{"montant_caution": 500.00}` before signature | Implemented on Contract branch |
+| Contract | `POST /contrats/{contrat_id}/validation` | Owning client signs/validates; status becomes `VALIDE` | Implemented on Contract branch |
+| Contract | `POST /contrats/{contrat_id}/cloture` | Admin closes validated contract after return | Implemented on Contract branch |
+| Contract | `POST /contrats/{contrat_id}/prolongations` | Admin extends a validated contract and stores an annex | Implemented on Contract branch; requires Reservation support below |
+| Contract | `GET /contrats/{contrat_id}/prolongations` | List extension annexes, ownership-scoped | Implemented on Contract branch |
+
+**Reservation read response** is a direct JSON object, not wrapped in a `reservation` property:
+
+```json
+{
+  "id": 123,
+  "client_id": 45,
+  "vehicule_id": 8,
+  "date_debut": "2026-12-01",
+  "date_fin": "2026-12-04",
+  "prix_total": 1200.0,
+  "statut": "CONFIRMEE"
+}
+```
+
+`GET /reservations/{reservation_id}` returns 404 when absent. Contract creation and signature use this API as the source of truth; Contract must not read Reservation tables directly or trust caller-supplied reservation details.
+
+**Common response/error rules (proposed):** successful reads and state changes return the resource JSON directly; creates return 201; invalid requests return 422 (or 400 where existing code already does); missing resources return 404; state conflicts and duplicates return 409; auth errors return 401/403; unavailable upstream services return 503. Keep FastAPI's `{"detail": "..."}` error body until a shared error schema is adopted. Define explicit Pydantic response models for each endpoint so these shapes appear in OpenAPI.
+
+#### Extension workflow proposal
+
+Extensions cannot safely be implemented by Contract alone: only Reservation owns date availability and overlapping-booking rules. Adopt this two-service contract before enabling the proposed Contract extension route:
+
+1. Admin calls `POST /contrats/{contrat_id}/prolongations` with `{"nouvelle_date_fin": "YYYY-MM-DD"}`. Contract verifies the base contract is `VALIDE` and the requested end is later than its current effective end.
+2. Contract calls Reservation internally: `POST /reservations/{reservation_id}/prolongations` with the new end date and an `Idempotency-Key` UUID.
+3. Reservation atomically checks the reservation is `CONFIRMEE`, checks conflicts for the extension period, recalculates the amount, updates its owned reservation data, and returns the same result for retries of the same idempotency key. Return 409 if unavailable or invalid.
+4. Reservation returns `reservation_id`, `date_fin_precedente`, `date_fin`, `montant_supplementaire`, and a unique `prolongation_id`. Contract stores an append-only annex referencing that ID and returns 201 with the annex. The original validated contract terms remain unchanged.
+5. If Contract persistence fails after Reservation succeeds, retry with the same `Idempotency-Key`; Reservation must return the original result so Contract can finish persisting the annex without extending twice.
+
+The Contract side now follows this proposed interface, but the Reservation endpoint is still **not implemented or ratified**. The Reservation-service owner is responsible for implementing the endpoint and its idempotency storage before end-to-end extension works. The Contract-service owner will leave `service_reservation/` unchanged and integrate against that endpoint when it is available. No service may approve an extension using only a read-only availability check, because another booking could win the race.
 
 ### 3.3 Shared data types and business meaning
 
@@ -164,7 +219,9 @@ Record an owner and decision for each item:
 3. Confirm team-wide Python/FastAPI/SQLAlchemy use (the existing services use it; the Contract owner has chosen Python).
 4. Choose project currency and adopt fixed-precision money storage.
 5. Confirm authentication owner, JWT role claims, and route permissions.
-6. Confirm who creates/signs contracts, whether deposits/extensions are in scope, and how Return triggers contract closure.
+6. Confirm the proposed Reservation/Contract extension workflow, deposit policy, and how Return triggers Contract closure.
 7. Assign owners for Compose, schema migrations, frontend, integration tests, and root documentation.
+8. Ratify the common REST paths, response/error shapes, and Reservation extension idempotency contract in section 3.2.1.
+9. Reservation-service owner: implement and document `POST /reservations/{reservation_id}/prolongations` as specified in section 3.2.1; Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
 
 Once these are confirmed, update this file and implement against these shared contracts. Changes to API fields, statuses, or schema should be coordinated before merging.

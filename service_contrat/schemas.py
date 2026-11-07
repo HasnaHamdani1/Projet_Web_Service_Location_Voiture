@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -8,6 +8,37 @@ from .enums import ContractStatus
 
 class ContractCreate(BaseModel):
     reservation_id: int = Field(gt=0)
+
+
+class DepositCreate(BaseModel):
+    montant_caution: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
+class ExtensionCreate(BaseModel):
+    nouvelle_date_fin: date
+
+
+class ReservationExtensionResult(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    reservation_id: int = Field(gt=0)
+    prolongation_id: int = Field(gt=0)
+    date_fin_precedente: date
+    date_fin: date
+    montant_supplementaire: Decimal = Field(gt=0)
+
+
+class ExtensionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    contrat_id: int
+    reservation_prolongation_id: int
+    idempotency_key: str
+    date_fin_precedente: date
+    date_fin: date
+    montant_supplementaire: float
+    date_creation: datetime
 
 
 class ReservationSnapshot(BaseModel):
@@ -37,6 +68,10 @@ class ContractRead(BaseModel):
     numero_contrat: str
     date_generation: date
     statut: ContractStatus
+    date_validation: datetime | None
+    montant_caution: float | None
+    date_enregistrement_caution: datetime | None
+    date_cloture: datetime | None
     periode_prise: date
     periode_fin: date
     montant_total: float

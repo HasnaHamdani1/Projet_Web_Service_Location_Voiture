@@ -6,16 +6,29 @@ Service REST Python/FastAPI responsible for creating and managing rental contrac
 
 - An administrator creates a contract by reservation ID. The service fetches the reservation and copies its customer, vehicle, dates, and total amount. The reservation must have status `CONFIRMEE`.
 - New contracts start with the schema-defined status `EN_ATTENTE`.
+- An administrator records the deposit once, before client validation; the amount and UTC recording time are retained on the contract. Validation is rejected until the deposit is recorded.
 - Clients can list and retrieve only their own contracts; administrators can list all contracts.
+- Before validation, the service re-fetches the reservation and confirms it is still `CONFIRMEE` and matches the contract snapshot. The owning client can then validate/sign, changing its status to `VALIDE`.
+- Validation records `date_validation` in UTC for traceability.
+- An administrator closes a validated contract after return, changing its status to `CLOTURE`. Return-service authentication still needs to be aligned before that service calls this endpoint directly.
+- Closure records `date_cloture` in UTC for auditability.
+- An administrator can append an extension annex to a validated contract. The signed contract dates remain unchanged; Reservation must atomically check and apply the extension.
+- Lifecycle actions log contract/actor IDs and status-changing events without logging personal or deposit amounts.
 - The database unique key on `reservation_id` prevents duplicate contracts, including concurrent creation requests.
-- There is no contract-term update endpoint. Client validation/signature and closing after return are follow-up lifecycle features.
+- There is no contract-term update endpoint. After validation, only the lifecycle status can change.
 
 ## API
 
 - `GET /health` - database-backed health check.
 - `GET /contrats` - list contracts visible to the authenticated user; administrators can filter by `client_id` or `reservation_id`.
 - `GET /contrats/{contrat_id}` - retrieve a contract (clients can retrieve only their own).
+- `GET /contrats/numero/{numero_contrat}` - retrieve a contract by its unique reference (clients can retrieve only their own).
 - `POST /contrats` - administrator creates from `{"reservation_id": 123}`; returns `201` and the contract.
+- `POST /contrats/{contrat_id}/caution` - administrator records `{"montant_caution": 500.00}` while the contract is pending.
+- `POST /contrats/{contrat_id}/validation` - owning client validates/signs a pending contract.
+- `POST /contrats/{contrat_id}/cloture` - administrator closes a validated contract.
+- `POST /contrats/{contrat_id}/prolongations` - administrator extends through Reservation; requires `Idempotency-Key` UUID and body `{"nouvelle_date_fin":"YYYY-MM-DD"}`.
+- `GET /contrats/{contrat_id}/prolongations` - list extension annexes visible to the caller.
 
 FastAPI OpenAPI docs are available at `/docs` when the service is running.
 
@@ -23,16 +36,19 @@ FastAPI OpenAPI docs are available at `/docs` when the service is running.
 
 Copy `.env.example` values into the root Compose environment (do not commit a real `.env`). The service requires:
 
-- `DATABASE_URL`: SQLAlchemy MySQL connection string for the shared database, for example `mysql+pymysql://<user>:<password>@mysql:3306/db_location_vehicules`.
+- `DATABASE_URL`: SQLAlchemy MySQL connection string for the shared database, for example `mysql+pymysql://location_app:replace_me@mysql:3306/db_location_vehicules` (replace the dummy credentials in your local `.env`).
 - `RESERVATION_SERVICE_URL`: Reservation base URL; in Compose this should be `http://service_reservation:8000`.
 - `JWT_SECRET`: the HS256 secret shared with the token issuer.
 - `RESERVATION_SERVICE_TIMEOUT_SECONDS`: upstream timeout (defaults to 5 seconds).
+- `CORS_ORIGINS`: comma-separated browser origins allowed to call this API; set this to the deployed frontend origin(s).
 
 Protected routes expect a bearer JWT with claims `sub` (positive numeric user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`. The token issuer and every service must agree on this format and secret. The service does not issue tokens.
 
 ## Database
 
-The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
+The ORM maps the existing shared schema's singular `contrat` table and its fields. Apply `migrations/001_create_contrat.sql` only if the central schema has not already created that table, then apply migrations `002` through `005`. The service never runs `create_all()` or changes shared schema automatically. The existing dump permits nullable `reservation_id`; this API always sets it, and the team should migrate the column to `NOT NULL` when coordinating the shared schema.
+
+The extension endpoint depends on `POST /reservations/{id}/prolongations` with atomic conflict checking and idempotency support. Until Reservation implements that endpoint, extension requests cannot complete and return an upstream error.
 
 ## Run
 
@@ -41,6 +57,36 @@ Build from the repository root so Docker can copy the service directory:
 ```powershell
 docker build -f service_contrat/Dockerfile -t service_contrat .
 ```
+
+The container runs as the unprivileged `appuser` account.
+
+Add the following service entry to the team's root `compose.yaml` (the `mysql` and `service_reservation` services are owned/configured at the project level):
+
+```yaml
+services:
+  service_contrat:
+    build:
+      context: .
+      dockerfile: service_contrat/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      RESERVATION_SERVICE_URL: http://service_reservation:8000
+      RESERVATION_SERVICE_TIMEOUT_SECONDS: ${RESERVATION_SERVICE_TIMEOUT_SECONDS:-5}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+```
+
+Apply the Contract migrations to the shared database before starting this container. Add a host `ports` mapping only if developers need to access the Contract API directly; internal services use `http://service_contrat:8000`.
 
 In a local Python environment, install `requirements.txt`, set the environment variables above, then run:
 

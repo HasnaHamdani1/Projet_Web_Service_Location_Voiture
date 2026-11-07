@@ -8,7 +8,12 @@ WORKDIR /app
 COPY service_contrat/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY service_contrat/ ./service_contrat/
+RUN addgroup --system --gid 10001 appgroup \
+    && adduser --system --uid 10001 --ingroup appgroup appuser
+
+COPY --chown=appuser:appgroup service_contrat/ ./service_contrat/
+
+USER appuser
 
 EXPOSE 8000
 

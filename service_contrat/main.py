@@ -1,17 +1,22 @@
 from datetime import date
 from decimal import Decimal
+import logging
+import os
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from .auth import Principal, get_current_principal, require_admin
+from .auth import Principal, get_current_principal, require_admin, require_client
 from .database import get_db
 from .enums import ContractStatus, UserRole
+from .extensions import router as extensions_router
 from .models import Contract
 from .reservation_client import get_reservation
-from .schemas import ContractCreate, ContractRead
+from .schemas import ContractCreate, ContractRead, DepositCreate
 
 
 app = FastAPI(
@@ -22,6 +27,21 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
+    )
+app.include_router(extensions_router)
+logger = logging.getLogger("service_contrat")
 
 
 def trouver_contrat(db: Session, contrat_id: int) -> Contract:
@@ -108,6 +128,12 @@ def creer_contrat(
         raise
 
     db.refresh(contrat)
+    logger.info(
+        "contract_created contract_id=%s reservation_id=%s actor_user_id=%s",
+        contrat.id,
+        contrat.reservation_id,
+        _administrateur.user_id,
+    )
     return contrat
 
 
@@ -140,6 +166,29 @@ def lister_contrats(
 
 
 @app.get(
+    "/contrats/numero/{numero_contrat}",
+    response_model=ContractRead,
+    tags=["contrats"],
+)
+def consulter_contrat_par_numero(
+    numero_contrat: str,
+    db: Session = Depends(get_db),
+    principal: Principal = Depends(get_current_principal),
+):
+    contrat = (
+        db.query(Contract)
+        .filter(Contract.numero_contrat == numero_contrat)
+        .first()
+    )
+    if contrat is None or (
+        principal.role == UserRole.CLIENT
+        and contrat.client_id != principal.user_id
+    ):
+        raise HTTPException(status_code=404, detail="Contrat introuvable")
+    return contrat
+
+
+@app.get(
     "/contrats/{contrat_id}", response_model=ContractRead, tags=["contrats"]
 )
 def consulter_contrat(
@@ -154,4 +203,166 @@ def consulter_contrat(
     ):
         # Do not disclose whether another customer's contract exists.
         raise HTTPException(status_code=404, detail="Contrat introuvable")
+    return contrat
+
+
+@app.post("/contrats/{contrat_id}/caution", response_model=ContractRead, tags=["contrats"])
+def enregistrer_caution(
+    contrat_id: int,
+    demande: DepositCreate,
+    db: Session = Depends(get_db),
+    _administrateur: Principal = Depends(require_admin),
+):
+    contrat = trouver_contrat(db, contrat_id)
+    if contrat.statut != ContractStatus.EN_ATTENTE:
+        raise HTTPException(status_code=409, detail="La caution doit être enregistrée avant la validation")
+    if contrat.montant_caution is not None:
+        raise HTTPException(status_code=409, detail="Une caution est déjà enregistrée")
+
+    updated = db.query(Contract).filter(
+        Contract.id == contrat_id,
+        Contract.statut == ContractStatus.EN_ATTENTE,
+        Contract.montant_caution.is_(None),
+    ).update(
+        {
+            Contract.montant_caution: float(demande.montant_caution),
+            Contract.date_enregistrement_caution: func.utc_timestamp(),
+        },
+        synchronize_session=False,
+    )
+    if updated != 1:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Le contrat a déjà changé d'état")
+    db.commit()
+    db.refresh(contrat)
+    logger.info(
+        "contract_deposit_recorded contract_id=%s actor_user_id=%s",
+        contrat.id,
+        _administrateur.user_id,
+    )
+    return contrat
+
+
+@app.post(
+    "/contrats/{contrat_id}/validation",
+    response_model=ContractRead,
+    tags=["contrats"],
+)
+def valider_contrat(
+    contrat_id: int,
+    db: Session = Depends(get_db),
+    client: Principal = Depends(require_client),
+):
+    contrat = trouver_contrat(db, contrat_id)
+    if contrat.client_id != client.user_id:
+        raise HTTPException(status_code=404, detail="Contrat introuvable")
+    if contrat.statut != ContractStatus.EN_ATTENTE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Seul un contrat en attente peut être validé",
+        )
+    if contrat.montant_caution is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La caution doit être enregistrée avant la validation du contrat",
+        )
+
+    if contrat.reservation_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Le contrat n'est lié à aucune réservation",
+        )
+    reservation = get_reservation(contrat.reservation_id)
+    if reservation.statut != "CONFIRMEE":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La réservation n'est plus confirmée; le contrat ne peut pas être validé",
+        )
+    snapshot_matches = (
+        reservation.client_id == contrat.client_id
+        and reservation.vehicule_id == contrat.vehicule_id
+        and reservation.date_debut == contrat.periode_prise
+        and reservation.date_fin == contrat.periode_fin
+        and reservation.prix_total == Decimal(str(contrat.montant_total))
+    )
+    if not snapshot_matches:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Les données de la réservation ont changé depuis la création du contrat",
+        )
+
+    updated = (
+        db.query(Contract)
+        .filter(
+            Contract.id == contrat_id,
+            Contract.statut == ContractStatus.EN_ATTENTE,
+        )
+        .update(
+            {
+                Contract.statut: ContractStatus.VALIDE,
+                Contract.date_validation: func.utc_timestamp(),
+            },
+            synchronize_session=False,
+        )
+    )
+    if updated != 1:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Le contrat a déjà changé d'état",
+        )
+    db.commit()
+    db.refresh(contrat)
+    logger.info(
+        "contract_validated contract_id=%s actor_user_id=%s",
+        contrat.id,
+        client.user_id,
+    )
+    return contrat
+
+
+@app.post(
+    "/contrats/{contrat_id}/cloture",
+    response_model=ContractRead,
+    tags=["contrats"],
+)
+def cloturer_contrat(
+    contrat_id: int,
+    db: Session = Depends(get_db),
+    _administrateur: Principal = Depends(require_admin),
+):
+    contrat = trouver_contrat(db, contrat_id)
+    if contrat.statut != ContractStatus.VALIDE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Seul un contrat validé peut être clôturé",
+        )
+
+    updated = (
+        db.query(Contract)
+        .filter(
+            Contract.id == contrat_id,
+            Contract.statut == ContractStatus.VALIDE,
+        )
+        .update(
+            {
+                Contract.statut: ContractStatus.CLOTURE,
+                Contract.date_cloture: func.utc_timestamp(),
+            },
+            synchronize_session=False,
+        )
+    )
+    if updated != 1:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Le contrat a déjà changé d'état",
+        )
+    db.commit()
+    db.refresh(contrat)
+    logger.info(
+        "contract_closed contract_id=%s actor_user_id=%s",
+        contrat.id,
+        _administrateur.user_id,
+    )
     return contrat
