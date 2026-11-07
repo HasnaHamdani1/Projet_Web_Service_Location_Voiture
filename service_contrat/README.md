@@ -57,6 +57,33 @@ Build from the repository root so Docker can copy the service directory:
 docker build -f service_contrat/Dockerfile -t service_contrat .
 ```
 
+Add the following service entry to the team's root `compose.yaml` (the `mysql` and `service_reservation` services are owned/configured at the project level):
+
+```yaml
+services:
+  service_contrat:
+    build:
+      context: .
+      dockerfile: service_contrat/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      RESERVATION_SERVICE_URL: http://service_reservation:8000
+      RESERVATION_SERVICE_TIMEOUT_SECONDS: ${RESERVATION_SERVICE_TIMEOUT_SECONDS:-5}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+```
+
+Apply the Contract migrations to the shared database before starting this container. Add a host `ports` mapping only if developers need to access the Contract API directly; internal services use `http://service_contrat:8000`.
+
 In a local Python environment, install `requirements.txt`, set the environment variables above, then run:
 
 ```powershell
