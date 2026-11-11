@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarRental | Administration</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="dashboard">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-icon">C</span>
+            <span>CarRental</span>
+        </div>
+
+        <p class="sidebar-label">ADMINISTRATION</p>
+
+        <nav class="sidebar-nav">
+            <a href="#dashboard" class="nav-link active">
+                <span>▦</span> Dashboard
+            </a>
+            <a href="#vehicles" class="nav-link">
+                <span>🚗</span> Gestion des véhicules
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <span class="admin-avatar">A</span>
+            <div>
+                <strong>Administrateur</strong>
+                <small>Espace admin</small>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <p class="breadcrumb">CarRental / Administration</p>
+                <h2>Gestion de la flotte</h2>
+            </div>
+            <div class="top-admin">
+                <span class="admin-avatar">A</span>
+                <span>Administrateur</span>
+                <button type="button" id="logout-btn" class="secondary-btn">
+                Déconnexion
+                </button>
+            </div>
+        </header>
+
+        <section id="dashboard" class="welcome-section">
+            <h1>Tableau de bord</h1>
+            <p>Bienvenue dans votre espace d'administration.</p>
+        </section>
+
+        <!-- Statistics -->
+        <section class="stats-section">
+            <div class="section-heading">
+                <h2>Vue d'ensemble</h2>
+            </div>
+
+            <div class="stats-grid">
+                <article class="stat-card">
+                    <div class="stat-icon icon-total">🚘</div>
+                    <div>
+                        <p>Total véhicules</p>
+                        <h2 id="total-vehicles">0</h2>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon icon-available">✓</div>
+                    <div>
+                        <p>Disponibles</p>
+                        <h2 id="available-vehicles">0</h2>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon icon-rented">🔑</div>
+                    <div>
+                        <p>Loués</p>
+                        <h2 id="rented-vehicles">0</h2>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon icon-maintenance">🔧</div>
+                    <div>
+                        <p>En maintenance</p>
+                        <h2 id="maintenance-vehicles">0</h2>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Vehicles table -->
+        <section id="vehicles" class="vehicles-section">
+            <div class="section-heading vehicles-heading">
+                <div>
+                    <h2>Gestion des véhicules</h2>
+                    <p>Consultez et gérez votre parc automobile.</p>
+                </div>
+
+                <button type="button" id="add-vehicle-btn" class="primary-btn">
+                    <span>＋</span> Ajouter un véhicule
+                </button>
+            </div>
+
+            <div class="table-card">
+                <div id="loading-message" class="message"></div>
+                <div id="error-message" class="error-message"></div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Véhicule</th>
+                                <th>Immatriculation</th>
+                                <th>Prix / jour</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vehicle-table-body"></tbody>
+                    </table>
+                </div>
+
+                <div id="empty-message" class="empty-message" hidden>
+                    Aucun véhicule enregistré pour le moment.
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Modal ajout / modification -->
+<div id="vehicle-modal" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true"
+         aria-labelledby="modal-title">
+
+        <div class="modal-header">
+            <div>
+                <p class="modal-eyebrow">GESTION DE LA FLOTTE</p>
+                <h2 id="modal-title">Ajouter un véhicule</h2>
+                <p>Renseignez les informations du véhicule.</p>
+            </div>
+
+            <button type="button" id="close-modal-btn"
+                    class="close-modal-btn" aria-label="Fermer">
+                &times;
+            </button>
+        </div>
+
+        <form id="vehicle-form">
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label for="immatriculation">Immatriculation</label>
+                    <input type="text" id="immatriculation"
+                           name="immatriculation"
+                           placeholder="Ex : 12345-A-6" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="marque">Marque</label>
+                    <input type="text" id="marque" name="marque"
+                           placeholder="Ex : Dacia" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="modele">Modèle</label>
+                    <input type="text" id="modele" name="modele"
+                           placeholder="Ex : Logan" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prix_par_jour">Prix par jour (DH)</label>
+                    <input type="number" id="prix_par_jour"
+                           name="prix_par_jour"
+                           placeholder="Ex : 250" min="0.01"
+                           step="0.01" required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="statut">Statut du véhicule</label>
+                    <select id="statut" name="statut" required>
+                        <option value="DISPONIBLE">Disponible</option>
+                        <option value="RESERVE">Réservé</option>
+                        <option value="LOUE">Loué</option>
+                        <option value="MAINTENANCE">En maintenance</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancel-modal-btn"
+                        class="secondary-btn">
+                    Annuler
+                </button>
+
+                <button type="submit" id="save-vehicle-btn"
+                        class="primary-btn">
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Notification -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>
+
