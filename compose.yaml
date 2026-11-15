@@ -1,4 +1,4 @@
-services:
+﻿services:
   mysql:
     image: mysql:8.4.13
     environment:
@@ -33,7 +33,7 @@ services:
       mysql:
         condition: service_healthy
     ports:
-      - "8001:8000"
+      - "8005:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 10s
@@ -70,7 +70,7 @@ services:
       context: .
       dockerfile: service_auth/Dockerfile
     environment:
-      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/db_location_voitures
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_TTL_MINUTES: ${JWT_TTL_MINUTES:-60}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
@@ -116,7 +116,7 @@ services:
     build: ./frontend
     environment:
       AUTH_API_URL: http://localhost:8004
-      VEHICLE_API_URL: http://localhost:8001
+      VEHICLE_API_URL: http://localhost:8005
       RESERVATION_API_URL: http://localhost:8002
       CONTRACT_API_URL: http://localhost:8003
     depends_on:
@@ -140,3 +140,4 @@ services:
 
 volumes:
   mysql_data:
+

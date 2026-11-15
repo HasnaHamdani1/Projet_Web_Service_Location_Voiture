@@ -1,10 +1,5 @@
 
-const API_VEHICULES = "http://127.0.0.1:8000";
-
-// Vérifier la connexion administrateur
-if (!sessionStorage.getItem("adminToken")) {
-    window.location.replace("login.html");
-}
+const API_VEHICULES = "http://127.0.0.1:8005/vehicules";
 
 const STATUTS = [
     "DISPONIBLE",
@@ -13,57 +8,36 @@ const STATUTS = [
     "MAINTENANCE"
 ];
 
-const modal = document.getElementById("vehicle-modal");
-const form = document.getElementById("vehicle-form");
-const tableau = document.getElementById("vehicle-table-body");
-const toast = document.getElementById("toast");
-const saveButton = document.getElementById("save-vehicle-btn");
-
 let vehiculeEnCours = null;
-let toastTimer = null;
+let vehicules = [];
 
-// Échapper les caractères HTML
-function escapeHTML(value) {
-    return String(value ?? "").replace(/[&<>"']/g, char => ({
+const formulaire = document.getElementById("vehicle-form");
+const modal = document.getElementById("vehicle-modal");
+const corpsTableau = document.getElementById("vehicle-table-body");
+const boutonEnregistrer = document.getElementById("save-vehicle-btn");
+
+
+// Échapper les caractères spéciaux avant insertion HTML
+function echapperHTML(valeur) {
+    return String(valeur ?? "").replace(/[&<>"']/g, caractere => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#039;"
-    })[char]);
+    })[caractere]);
 }
 
-// Notifications
-function afficherNotification(message, type = "success") {
-    toast.textContent = message;
-    toast.className = type === "error"
-        ? "toast error show"
-        : "toast show";
 
-    clearTimeout(toastTimer);
-
-    toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
-    }, 3000);
-}
-
-// Communication avec l'API et authentification JWT
+// Communication avec l'API, sans authentification
 async function requeteAPI(url, methode = "GET", donnees = null) {
-
-    const token = sessionStorage.getItem("adminToken");
-
     const options = {
         method: methode,
-        headers: {
-            "Content-Type": "application/json"
-        }
+        headers: {}
     };
 
-    if (token) {
-        options.headers.Authorization = `Bearer ${token}`;
-    }
-
     if (donnees !== null) {
+        options.headers["Content-Type"] = "application/json";
         options.body = JSON.stringify(donnees);
     }
 
@@ -79,11 +53,6 @@ async function requeteAPI(url, methode = "GET", donnees = null) {
             // Réponse non JSON
         }
 
-        if (response.status === 401) {
-            sessionStorage.removeItem("adminToken");
-            window.location.replace("login.html");
-        }
-
         throw new Error(message);
     }
 
@@ -94,16 +63,40 @@ async function requeteAPI(url, methode = "GET", donnees = null) {
     return response.json();
 }
 
-// Ouvrir le formulaire d'ajout
-function ouvrirFormulaireAjout() {
 
+// Afficher une notification
+function afficherNotification(message) {
+    const toast = document.getElementById("toast");
+
+    toast.textContent = message;
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
+}
+
+
+// Afficher ou masquer un message
+function afficherErreur(message) {
+    document.getElementById("error-message").textContent = message;
+}
+
+function effacerErreur() {
+    afficherErreur("");
+}
+
+
+// Ouvrir le formulaire pour ajouter
+function ouvrirFormulaireAjout() {
     vehiculeEnCours = null;
-    form.reset();
+
+    formulaire.reset();
 
     document.getElementById("modal-title").textContent =
         "Ajouter un véhicule";
 
-    saveButton.textContent = "Enregistrer";
+    boutonEnregistrer.textContent = "Enregistrer";
 
     document.getElementById("statut").value = "DISPONIBLE";
 
@@ -112,20 +105,15 @@ function ouvrirFormulaireAjout() {
     document.getElementById("immatriculation").focus();
 }
 
-// Ouvrir le formulaire de modification
-async function ouvrirFormulaireModification(id) {
 
+// Ouvrir le formulaire pour modifier
+async function ouvrirFormulaireModification(id) {
     try {
-        const vehicule = await requeteAPI(
-            `${API_VEHICULES}/vehicules/${id}`
-        );
+        effacerErreur();
+
+        const vehicule = await requeteAPI(`${API_VEHICULES}/${id}`);
 
         vehiculeEnCours = id;
-
-        document.getElementById("modal-title").textContent =
-            "Modifier le véhicule";
-
-        saveButton.textContent = "Enregistrer les modifications";
 
         document.getElementById("immatriculation").value =
             vehicule.immatriculation;
@@ -136,263 +124,237 @@ async function ouvrirFormulaireModification(id) {
         document.getElementById("modele").value =
             vehicule.modele;
 
+        
+
         document.getElementById("prix_par_jour").value =
             vehicule.prix_par_jour;
 
         document.getElementById("statut").value =
             vehicule.statut;
 
+        document.getElementById("modal-title").textContent =
+            "Modifier un véhicule";
+
+        boutonEnregistrer.textContent = "Enregistrer les modifications";
+
         modal.hidden = false;
 
-        document.getElementById("immatriculation").focus();
-
     } catch (erreur) {
-        afficherNotification(erreur.message, "error");
+        afficherNotification(erreur.message);
     }
 }
 
+
 // Fermer le formulaire
 function fermerModal() {
-
     modal.hidden = true;
-    form.reset();
+    formulaire.reset();
     vehiculeEnCours = null;
+    boutonEnregistrer.textContent = "Enregistrer";
 }
 
-// Ajouter ou modifier un véhicule
-async function enregistrerVehicule(event) {
 
+// Enregistrer un véhicule : ajout ou modification
+async function enregistrerVehicule(event) {
     event.preventDefault();
 
-    if (!form.reportValidity()) return;
+ 
+    const prix = Number(document.getElementById("prix_par_jour").value);
 
     const donnees = {
-        immatriculation: document
-            .getElementById("immatriculation").value.trim(),
-
-        marque: document
-            .getElementById("marque").value.trim(),
-
-        modele: document
-            .getElementById("modele").value.trim(),
-
-        prix_par_jour: Number(
-            document.getElementById("prix_par_jour").value
-        ),
-
-        statut: document
-            .getElementById("statut").value
+        immatriculation: document.getElementById("immatriculation").value.trim(),
+        marque: document.getElementById("marque").value.trim(),
+        modele: document.getElementById("modele").value.trim(),
+        prix_par_jour: prix,
+        statut: document.getElementById("statut").value
     };
 
     if (
         !donnees.immatriculation ||
         !donnees.marque ||
-        !donnees.modele ||
-        !Number.isFinite(donnees.prix_par_jour) ||
-        donnees.prix_par_jour <= 0 ||
-        !STATUTS.includes(donnees.statut)
+        !donnees.modele
     ) {
-        afficherNotification(
-            "Veuillez vérifier les informations saisies.",
-            "error"
-        );
+        afficherNotification("Veuillez remplir tous les champs.");
         return;
     }
 
-    saveButton.disabled = true;
-    saveButton.textContent = "Enregistrement...";
+   
+
+    if (!Number.isFinite(prix) || prix <= 0) {
+        afficherNotification("Le prix doit être supérieur à zéro.");
+        return;
+    }
+
+    const idAModifier = vehiculeEnCours;
+
+    boutonEnregistrer.disabled = true;
+    boutonEnregistrer.textContent = "Enregistrement...";
 
     try {
-
-        if (vehiculeEnCours === null) {
-
+        if (idAModifier !== null) {
             await requeteAPI(
-                `${API_VEHICULES}/vehicules`,
-                "POST",
-                donnees
-            );
-
-            fermerModal();
-
-            afficherNotification(
-                "Le véhicule a été ajouté avec succès !"
-            );
-
-        } else {
-
-            await requeteAPI(
-                `${API_VEHICULES}/vehicules/${vehiculeEnCours}`,
+                `${API_VEHICULES}/${idAModifier}`,
                 "PUT",
                 donnees
             );
 
-            fermerModal();
-
-            afficherNotification(
-                "Le véhicule a été modifié avec succès !"
+            afficherNotification("Véhicule modifié avec succès.");
+        } else {
+            await requeteAPI(
+                API_VEHICULES,
+                "POST",
+                donnees
             );
+
+            afficherNotification("Véhicule ajouté avec succès.");
         }
 
+        fermerModal();
         await chargerVehicules();
 
     } catch (erreur) {
-
-        afficherNotification(erreur.message, "error");
+        afficherNotification(erreur.message);
 
     } finally {
-
-        saveButton.disabled = false;
-
-        saveButton.textContent =
-            vehiculeEnCours === null
-                ? "Enregistrer"
-                : "Enregistrer les modifications";
+        boutonEnregistrer.disabled = false;
+        boutonEnregistrer.textContent =
+            vehiculeEnCours !== null
+                ? "Enregistrer les modifications"
+                : "Enregistrer";
     }
 }
+
 
 // Supprimer un véhicule
 async function supprimerVehicule(id) {
-
     const confirmation = confirm(
-        `Voulez-vous vraiment supprimer le véhicule n° ${id} ?`
+        "Voulez-vous vraiment supprimer ce véhicule ?"
     );
 
-    if (!confirmation) return;
+    if (!confirmation) {
+        return;
+    }
 
     try {
+        await requeteAPI(`${API_VEHICULES}/${id}`, "DELETE");
 
-        await requeteAPI(
-            `${API_VEHICULES}/vehicules/${id}`,
-            "DELETE"
-        );
-
-        afficherNotification(
-            "Le véhicule a été supprimé avec succès !"
-        );
+        afficherNotification("Véhicule supprimé avec succès.");
 
         await chargerVehicules();
 
     } catch (erreur) {
-
-        afficherNotification(erreur.message, "error");
+        afficherNotification(erreur.message);
     }
 }
 
-// Charger les véhicules et les statistiques
+
+// Afficher les véhicules dans le tableau
+function afficherVehicules(liste) {
+    corpsTableau.innerHTML = "";
+
+    const messageVide = document.getElementById("empty-message");
+
+    if (liste.length === 0) {
+        messageVide.hidden = false;
+        return;
+    }
+
+    messageVide.hidden = true;
+
+    liste.forEach(vehicule => {
+        const ligne = document.createElement("tr");
+
+        const statut = STATUTS.includes(vehicule.statut)
+            ? vehicule.statut
+            : "DISPONIBLE";
+
+        ligne.innerHTML = `
+            <td>${echapperHTML(vehicule.id)}</td>
+
+            <td>
+                <strong>
+                    ${echapperHTML(vehicule.marque)}
+                    ${echapperHTML(vehicule.modele)}
+                </strong>
+            </td>
+
+            
+
+            <td>${echapperHTML(vehicule.immatriculation)}</td>
+
+            <td>${echapperHTML(vehicule.prix_par_jour)} DH</td>
+
+            <td>
+                <span class="status-badge status-${statut.toLowerCase()}">
+                    ${echapperHTML(statut)}
+                </span>
+            </td>
+
+            <td>
+                <button type="button"
+                    class="secondary-btn"
+                    data-action="edit"
+                    data-id="${Number(vehicule.id)}">
+                    Modifier
+                </button>
+
+                <button type="button"
+                    class="secondary-btn"
+                    data-action="delete"
+                    data-id="${Number(vehicule.id)}">
+                    Supprimer
+                </button>
+            </td>
+        `;
+
+        corpsTableau.appendChild(ligne);
+    });
+}
+
+
+// Mettre à jour les statistiques
+function mettreAJourStatistiques(liste) {
+    document.getElementById("total-vehicles").textContent =
+        liste.length;
+
+    document.getElementById("available-vehicles").textContent =
+        liste.filter(v => v.statut === "DISPONIBLE").length;
+
+    document.getElementById("rented-vehicles").textContent =
+        liste.filter(v => v.statut === "LOUE").length;
+
+    document.getElementById("maintenance-vehicles").textContent =
+        liste.filter(v => v.statut === "MAINTENANCE").length;
+}
+
+
+// Charger les véhicules depuis l'API
 async function chargerVehicules() {
-
-    const loading = document.getElementById("loading-message");
-    const error = document.getElementById("error-message");
-    const empty = document.getElementById("empty-message");
-
-    loading.textContent = "Chargement des véhicules...";
-    error.textContent = "";
-    empty.hidden = true;
+    const messageChargement =
+        document.getElementById("loading-message");
 
     try {
+        effacerErreur();
 
-        const vehicules = await requeteAPI(
-            `${API_VEHICULES}/vehicules`
-        );
+        messageChargement.textContent = "Chargement des véhicules...";
 
-        tableau.innerHTML = "";
+        vehicules = await requeteAPI(API_VEHICULES);
 
-        let disponibles = 0;
-        let loues = 0;
-        let maintenance = 0;
-
-        vehicules.forEach(vehicule => {
-
-            const statut = vehicule.statut;
-
-            if (statut === "DISPONIBLE") disponibles++;
-            if (statut === "LOUE") loues++;
-            if (statut === "MAINTENANCE") maintenance++;
-
-            let classeStatut = "status-other";
-
-            if (statut === "DISPONIBLE") {
-                classeStatut = "status-available";
-            } else if (statut === "LOUE") {
-                classeStatut = "status-rented";
-            } else if (statut === "MAINTENANCE") {
-                classeStatut = "status-maintenance";
-            } else if (statut === "RESERVE") {
-                classeStatut = "status-reserved";
-            }
-
-            const ligne = document.createElement("tr");
-
-            ligne.innerHTML = `
-                <td>${escapeHTML(vehicule.id)}</td>
-
-                <td>
-                    <strong>
-                        ${escapeHTML(vehicule.marque)}
-                        ${escapeHTML(vehicule.modele)}
-                    </strong>
-                </td>
-
-                <td>${escapeHTML(vehicule.immatriculation)}</td>
-
-                <td>${escapeHTML(vehicule.prix_par_jour)} DH</td>
-
-                <td>
-                    <span class="status ${classeStatut}">
-                        ${escapeHTML(statut)}
-                    </span>
-                </td>
-
-                <td class="vehicle-actions">
-
-                    <button type="button"
-                        class="edit-btn"
-                        data-action="edit"
-                        data-id="${Number(vehicule.id)}">
-                        Modifier
-                    </button>
-
-                    <button type="button"
-                        class="delete-btn"
-                        data-action="delete"
-                        data-id="${Number(vehicule.id)}">
-                        Supprimer
-                    </button>
-
-                </td>
-            `;
-
-            tableau.appendChild(ligne);
-        });
-
-        document.getElementById("total-vehicles").textContent =
-            vehicules.length;
-
-        document.getElementById("available-vehicles").textContent =
-            disponibles;
-
-        document.getElementById("rented-vehicles").textContent =
-            loues;
-
-        document.getElementById("maintenance-vehicles").textContent =
-            maintenance;
-
-        empty.hidden = vehicules.length !== 0;
-
-        loading.textContent = "";
+        afficherVehicules(vehicules);
+        mettreAJourStatistiques(vehicules);
 
     } catch (erreur) {
+        afficherErreur(
+            "Impossible de charger les véhicules : " + erreur.message
+        );
 
-        loading.textContent = "";
-        error.textContent = erreur.message;
-
-        afficherNotification(erreur.message, "error");
-
-        console.error(erreur);
+    } finally {
+        messageChargement.textContent = "";
     }
 }
 
-// Événements des boutons
+
+// Boutons et événements
 document.getElementById("add-vehicle-btn")
     .addEventListener("click", ouvrirFormulaireAjout);
 
@@ -402,32 +364,18 @@ document.getElementById("close-modal-btn")
 document.getElementById("cancel-modal-btn")
     .addEventListener("click", fermerModal);
 
-modal.addEventListener("click", event => {
+formulaire.addEventListener("submit", enregistrerVehicule);
 
-    if (event.target === modal) {
-        fermerModal();
-    }
-});
 
-document.addEventListener("keydown", event => {
-
-    if (event.key === "Escape" && !modal.hidden) {
-        fermerModal();
-    }
-});
-
-form.addEventListener("submit", enregistrerVehicule);
-
-// Actions Modifier et Supprimer
-tableau.addEventListener("click", event => {
-
+// Actions Modifier et Supprimer dans le tableau
+corpsTableau.addEventListener("click", event => {
     const bouton = event.target.closest("button[data-action]");
 
-    if (!bouton) return;
+    if (!bouton) {
+        return;
+    }
 
     const id = Number(bouton.dataset.id);
-
-    if (!Number.isInteger(id) || id <= 0) return;
 
     if (bouton.dataset.action === "edit") {
         ouvrirFormulaireModification(id);
@@ -438,15 +386,15 @@ tableau.addEventListener("click", event => {
     }
 });
 
-// Déconnexion si le bouton existe dans le HTML
-const logoutButton = document.getElementById("logout-btn");
 
-if (logoutButton) {
-    logoutButton.addEventListener("click", () => {
-        sessionStorage.removeItem("adminToken");
-        window.location.replace("login.html");
-    });
-}
+// Fermer le modal en cliquant à l'extérieur
+modal.addEventListener("click", event => {
+    if (event.target === modal) {
+        fermerModal();
+    }
+});
 
-// Chargement initial
+
+// Chargement initial du dashboard
 chargerVehicules();
+

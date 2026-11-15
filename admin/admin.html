@@ -11,7 +11,6 @@
 
 <div class="dashboard">
 
-    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="brand">
             <span class="brand-icon">C</span>
@@ -38,7 +37,6 @@
         </div>
     </aside>
 
-    <!-- Main content -->
     <main class="main-content">
 
         <header class="topbar">
@@ -46,12 +44,10 @@
                 <p class="breadcrumb">CarRental / Administration</p>
                 <h2>Gestion de la flotte</h2>
             </div>
+
             <div class="top-admin">
                 <span class="admin-avatar">A</span>
                 <span>Administrateur</span>
-                <button type="button" id="logout-btn" class="secondary-btn">
-                Déconnexion
-                </button>
             </div>
         </header>
 
@@ -60,13 +56,13 @@
             <p>Bienvenue dans votre espace d'administration.</p>
         </section>
 
-        <!-- Statistics -->
         <section class="stats-section">
             <div class="section-heading">
                 <h2>Vue d'ensemble</h2>
             </div>
 
             <div class="stats-grid">
+
                 <article class="stat-card">
                     <div class="stat-icon icon-total">🚘</div>
                     <div>
@@ -98,11 +94,12 @@
                         <h2 id="maintenance-vehicles">0</h2>
                     </div>
                 </article>
+
             </div>
         </section>
 
-        <!-- Vehicles table -->
         <section id="vehicles" class="vehicles-section">
+
             <div class="section-heading vehicles-heading">
                 <div>
                     <h2>Gestion des véhicules</h2>
@@ -115,6 +112,7 @@
             </div>
 
             <div class="table-card">
+
                 <div id="loading-message" class="message"></div>
                 <div id="error-message" class="error-message"></div>
 
@@ -124,12 +122,14 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Véhicule</th>
+                                
                                 <th>Immatriculation</th>
                                 <th>Prix / jour</th>
                                 <th>Statut</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
+
                         <tbody id="vehicle-table-body"></tbody>
                     </table>
                 </div>
@@ -137,14 +137,17 @@
                 <div id="empty-message" class="empty-message" hidden>
                     Aucun véhicule enregistré pour le moment.
                 </div>
+
             </div>
         </section>
 
     </main>
 </div>
 
-<!-- Modal ajout / modification -->
+
+<!-- Fenêtre ajout / modification -->
 <div id="vehicle-modal" class="modal-overlay" hidden>
+
     <div class="modal-card" role="dialog" aria-modal="true"
          aria-labelledby="modal-title">
 
@@ -162,6 +165,7 @@
         </div>
 
         <form id="vehicle-form">
+
             <div class="form-grid">
 
                 <div class="form-group">
@@ -183,12 +187,13 @@
                            placeholder="Ex : Logan" required>
                 </div>
 
+                
                 <div class="form-group">
                     <label for="prix_par_jour">Prix par jour (DH)</label>
                     <input type="number" id="prix_par_jour"
                            name="prix_par_jour"
-                           placeholder="Ex : 250" min="0.01"
-                           step="0.01" required>
+                           placeholder="Ex : 250"
+                           min="0.01" step="0.01" required>
                 </div>
 
                 <div class="form-group full-width">
@@ -204,6 +209,7 @@
             </div>
 
             <div class="modal-actions">
+
                 <button type="button" id="cancel-modal-btn"
                         class="secondary-btn">
                     Annuler
@@ -213,15 +219,18 @@
                         class="primary-btn">
                     Enregistrer
                 </button>
+
             </div>
         </form>
+
     </div>
 </div>
+
 
 <!-- Notification -->
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script src="admin.js"></script>
+
 </body>
 </html>
-
