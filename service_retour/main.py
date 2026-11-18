@@ -1,7 +1,7 @@
 
 from datetime import date
 from decimal import Decimal
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -19,7 +19,20 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# ==========================================
+# Configuration CORS - Communication React
+# ==========================================
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # ==========================================
 # 1. Route d'accueil
 # ==========================================
@@ -67,6 +80,59 @@ def obtenir_tous_les_retours(
 
     return retours
 
+
+# ==========================================
+# Récupérer les retours avec les informations
+# du contrat, de la réservation et du véhicule
+# ==========================================
+
+@app.get("/retours/liste")
+def obtenir_liste_retours(db: Session = Depends(get_db)):
+
+    requete = text("""
+        SELECT
+            r.id AS id,
+            c.numeroContrat AS contrat,
+            v.immatriculation AS immat,
+            CONCAT(v.marque, ' ', v.modele) AS vehicule,
+            res.dateFin AS prevu,
+            r.dateRetour AS effectif,
+            r.dureeRetardJours AS retard,
+            r.etatVehicule AS etat
+        FROM retours r
+        INNER JOIN contrats c
+            ON r.contrat_id = c.id
+        INNER JOIN reservations res
+            ON c.reservation_id = res.id
+        INNER JOIN vehicules v
+            ON res.vehicule_id = v.id
+        ORDER BY r.id DESC
+    """)
+
+    resultats = db.execute(requete).mappings().all()
+
+    liste = []
+
+    for r in resultats:
+
+        etats = {
+            "BON": "Bon état",
+            "LEGER_DOMMAGE": "Léger dommage",
+            "DOMMAGE_IMPORTANT": "Dommage important"
+        }
+
+        liste.append({
+            "id": r["id"],
+            "contrat": r["contrat"],
+            "immat": r["immat"],
+            "vehicule": r["vehicule"],
+            "prevu": r["prevu"],
+            "effectif": r["effectif"],
+            "retard": r["retard"],
+            "etat": etats.get(str(r["etat"]), str(r["etat"]))
+        })
+
+    return liste
 
 # ==========================================
 # 4. Récupérer un retour par son identifiant

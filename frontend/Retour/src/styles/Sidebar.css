@@ -1,0 +1,10 @@
+.sidebar { width: 250px; flex-shrink: 0; background: #fff; border-right: 1px solid #e5e7eb; padding: 24px 20px; }
+.sidebar-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+.brand-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #000; font-size: 20px; }
+.sidebar-brand h2 { margin: 0; font-size: 15px; }
+.badge-connecte { font-size: 12px; color: var(--primary); font-weight: 600; }
+.sidebar-menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.sidebar-menu li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 8px; font-size: 14px; color: #374151; cursor: pointer; }
+.sidebar-menu li:hover { background: #f3f4f6; }
+.sidebar-menu li.active { background: var(--primary); color: #fff; font-weight: 600; }
+@media (max-width: 800px) { .sidebar { width: 100%; } .sidebar-menu { flex-direction: row; flex-wrap: wrap; } }
