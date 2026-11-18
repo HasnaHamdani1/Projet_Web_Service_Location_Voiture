@@ -8,3 +8,6 @@ venv/
 .env.*
 !.env.example
 !**/.env.example
+
+.venv/
+.env
