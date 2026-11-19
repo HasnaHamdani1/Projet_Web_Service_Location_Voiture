@@ -21,4 +21,4 @@ Tokens use `HS256` and contain `sub` as a positive user ID string, `role` as `CL
 
 ## Database and Compose
 
-The service uses the shared MySQL `utilisateur`, `client`, and `administrateur` tables from `db_location_vehicules.sql`. It does not create or migrate shared tables at startup. Compose builds this API from `service_auth/Dockerfile` and exposes it on host port 8004.
+The service maps the shared MySQL `utilisateurs`, `clients`, and `administrateurs` tables from `Base_de_données/db_location_voitures.sql`. The user password attribute maps to SQL column `motDePasse`; new users also store the schema-required `role` value. It does not create or migrate shared tables at startup. Compose builds this API from `service_auth/Dockerfile` and exposes it on host port 8004.

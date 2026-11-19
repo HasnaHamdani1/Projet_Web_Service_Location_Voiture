@@ -21,6 +21,7 @@ def main():
             nom=nom,
             email=email,
             mot_de_passe=hash_password(password),
+            role="ADMINISTRATEUR",
         )
         db.add(user)
         db.flush()

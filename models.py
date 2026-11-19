@@ -12,9 +12,9 @@ class Vehicule(Base):
         index=True,
         autoincrement=True,
     )
-    immatriculation = Column(String, unique=True, nullable=False)
-    marque = Column(String, nullable=False)
-    modele = Column(String, nullable=False)
+    immatriculation = Column(String(30), unique=True, nullable=False)
+    marque = Column(String(100), nullable=False)
+    modele = Column(String(100), nullable=False)
     annee = Column(Integer, nullable=False)
     prix_par_jour = Column(Float, nullable=False)
-    statut = Column(String, default="DISPONIBLE", nullable=False)
+    statut = Column(String(20), default="DISPONIBLE", nullable=False)

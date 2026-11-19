@@ -1,16 +1,21 @@
 from datetime import date
 from decimal import Decimal
+import json
 import logging
 import os
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .auth import Principal, get_current_principal, require_admin, require_client
+from .metier_contrat import RegleMetierContratError, ReglesMetierContrat
 from .database import get_db
 from .enums import ContractStatus, UserRole
 from .extensions import router as extensions_router
@@ -42,6 +47,7 @@ if cors_origins:
     )
 app.include_router(extensions_router)
 logger = logging.getLogger("service_contrat")
+FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
 
 def trouver_contrat(db: Session, contrat_id: int) -> Contract:
@@ -53,7 +59,19 @@ def trouver_contrat(db: Session, contrat_id: int) -> Contract:
 
 @app.get("/", tags=["service"])
 def accueil():
-    return {"message": "Bienvenue dans le service Contrat"}
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+@app.get("/config.js", include_in_schema=False)
+def frontend_config():
+    config = {
+        "auth": os.getenv("FRONTEND_AUTH_API_URL", "http://localhost:8004"),
+        "vehicle": os.getenv("FRONTEND_VEHICLE_API_URL", "http://localhost:8001"),
+        "reservation": os.getenv("FRONTEND_RESERVATION_API_URL", "http://localhost:8002"),
+        "contract": "",
+    }
+    script = f"window.APP_CONFIG = {json.dumps(config)}; window.APP_CONFIG.contract = window.location.origin;"
+    return Response(content=script, media_type="application/javascript")
 
 
 @app.get("/health", tags=["service"])
@@ -81,11 +99,13 @@ def creer_contrat(
 ):
     reservation = get_reservation(demande.reservation_id)
 
-    if reservation.statut != "CONFIRMEE":
+    try:
+        ReglesMetierContrat.verifier_reservation_confirmee(reservation.statut)
+    except RegleMetierContratError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Un contrat peut être créé uniquement pour une réservation confirmée",
-        )
+            detail=str(exc),
+        ) from exc
 
     existe = (
         db.query(Contract)
@@ -107,6 +127,7 @@ def creer_contrat(
         periode_fin=reservation.date_fin,
         montant_total=float(Decimal(reservation.prix_total)),
         reservation_id=reservation.id,
+        administrateur_id=_administrateur.user_id,
         client_id=reservation.client_id,
         vehicule_id=reservation.vehicule_id,
     )
@@ -214,10 +235,12 @@ def enregistrer_caution(
     _administrateur: Principal = Depends(require_admin),
 ):
     contrat = trouver_contrat(db, contrat_id)
-    if contrat.statut != ContractStatus.EN_ATTENTE:
-        raise HTTPException(status_code=409, detail="La caution doit être enregistrée avant la validation")
-    if contrat.montant_caution is not None:
-        raise HTTPException(status_code=409, detail="Une caution est déjà enregistrée")
+    try:
+        ReglesMetierContrat.verifier_caution_enregistrable(
+            contrat.statut, contrat.montant_caution
+        )
+    except RegleMetierContratError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     updated = db.query(Contract).filter(
         Contract.id == contrat_id,
@@ -251,21 +274,18 @@ def enregistrer_caution(
 def valider_contrat(
     contrat_id: int,
     db: Session = Depends(get_db),
-    client: Principal = Depends(require_client),
+    administrateur: Principal = Depends(require_admin),
 ):
     contrat = trouver_contrat(db, contrat_id)
-    if contrat.client_id != client.user_id:
-        raise HTTPException(status_code=404, detail="Contrat introuvable")
-    if contrat.statut != ContractStatus.EN_ATTENTE:
+    try:
+        ReglesMetierContrat.verifier_validation_possible(
+            contrat.statut, contrat.montant_caution
+        )
+    except RegleMetierContratError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Seul un contrat en attente peut être validé",
-        )
-    if contrat.montant_caution is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="La caution doit être enregistrée avant la validation du contrat",
-        )
+            detail=str(exc),
+        ) from exc
 
     if contrat.reservation_id is None:
         raise HTTPException(
@@ -273,11 +293,15 @@ def valider_contrat(
             detail="Le contrat n'est lié à aucune réservation",
         )
     reservation = get_reservation(contrat.reservation_id)
-    if reservation.statut != "CONFIRMEE":
+    try:
+        ReglesMetierContrat.verifier_reservation_confirmee(reservation.statut)
+    except RegleMetierContratError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="La réservation n'est plus confirmée; le contrat ne peut pas être validé",
-        )
+            detail=(
+                "La réservation n'est plus confirmée; le contrat ne peut pas être validé"
+            ),
+        ) from exc
     snapshot_matches = (
         reservation.client_id == contrat.client_id
         and reservation.vehicule_id == contrat.vehicule_id
@@ -316,7 +340,7 @@ def valider_contrat(
     logger.info(
         "contract_validated contract_id=%s actor_user_id=%s",
         contrat.id,
-        client.user_id,
+        administrateur.user_id,
     )
     return contrat
 
@@ -332,11 +356,13 @@ def cloturer_contrat(
     _administrateur: Principal = Depends(require_admin),
 ):
     contrat = trouver_contrat(db, contrat_id)
-    if contrat.statut != ContractStatus.VALIDE:
+    try:
+        ReglesMetierContrat.verifier_cloture_possible(contrat.statut)
+    except RegleMetierContratError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Seul un contrat validé peut être clôturé",
-        )
+            detail=str(exc),
+        ) from exc
 
     updated = (
         db.query(Contract)
@@ -366,3 +392,6 @@ def cloturer_contrat(
         _administrateur.user_id,
     )
     return contrat
+
+
+app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")

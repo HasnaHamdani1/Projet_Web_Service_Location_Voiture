@@ -12,6 +12,7 @@ RUN addgroup --system --gid 10001 appgroup \
     && adduser --system --uid 10001 --ingroup appgroup appuser
 
 COPY --chown=appuser:appgroup service_contrat/ ./service_contrat/
+COPY --chown=appuser:appgroup frontend/ ./frontend/
 
 USER appuser
 

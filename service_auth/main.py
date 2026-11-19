@@ -94,6 +94,7 @@ def inscrire_client(
         email=email,
         mot_de_passe=hash_password(demande.mot_de_passe),
         telephone=demande.telephone,
+        role="CLIENT",
     )
     db.add(utilisateur)
     try:

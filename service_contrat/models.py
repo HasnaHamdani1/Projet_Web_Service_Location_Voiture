@@ -15,17 +15,17 @@ from .enums import ContractStatus
 
 
 class Contract(Base):
-    """Contract record mapped to the shared schema's `contrat` table."""
+    """Contract record mapped to the shared schema's `contrats` table."""
 
-    __tablename__ = "contrat"
+    __tablename__ = "contrats"
 
     id = Column(
         BigInteger().with_variant(Integer, "sqlite"),
         primary_key=True,
         autoincrement=True,
     )
-    numero_contrat = Column(String(100), nullable=False, unique=True)
-    date_generation = Column(Date, nullable=False)
+    numero_contrat = Column("numeroContrat", String(50), nullable=False, unique=True)
+    date_generation = Column("dateGeneration", Date, nullable=False)
     statut = Column(
         SqlEnum(
             ContractStatus,
@@ -40,33 +40,21 @@ class Contract(Base):
     montant_caution = Column(Float, nullable=True)
     date_enregistrement_caution = Column(DateTime, nullable=True)
     date_cloture = Column(DateTime, nullable=True)
-    periode_prise = Column(Date, nullable=False)
-    periode_fin = Column(Date, nullable=False)
-    montant_total = Column(Float, nullable=False)
-    # The current shared SQL dump allows NULL here. This service always writes
-    # a reservation ID, and the team should make the column NOT NULL by migration.
-    reservation_id = Column(
-        BigInteger,
-        ForeignKey("reservation.id", name="fk_contrat_reservation"),
-        nullable=True,
-        unique=True,
-    )
-    client_id = Column(
-        BigInteger,
-        ForeignKey("client.id", name="fk_contrat_client"),
-        nullable=False,
-    )
-    vehicule_id = Column(
-        BigInteger,
-        ForeignKey("vehicule.id", name="fk_contrat_vehicule"),
-        nullable=False,
-    )
+    periode_prise = Column("periodePrise", Date, nullable=False)
+    periode_fin = Column("periodeFin", Date, nullable=False)
+    montant_total = Column("montantTotal", Float, nullable=False)
+    reservation_id = Column(BigInteger, nullable=False, unique=True)
+    administrateur_id = Column(BigInteger, nullable=False)
+    # These two snapshot fields are added by migration 006. The base shared
+    # schema omits them, but the Contract API uses them for ownership checks.
+    client_id = Column(BigInteger, nullable=False)
+    vehicule_id = Column(BigInteger, nullable=False)
 
 
 class ContractExtension(Base):
     """Append-only extension annex; validated contract terms stay unchanged."""
 
-    __tablename__ = "prolongation"
+    __tablename__ = "prolongations"
 
     id = Column(
         BigInteger().with_variant(Integer, "sqlite"),
@@ -75,7 +63,7 @@ class ContractExtension(Base):
     )
     contrat_id = Column(
         BigInteger,
-        ForeignKey("contrat.id", name="fk_prolongation_contrat"),
+        ForeignKey("contrats.id", name="fk_prolongations_contrat"),
         nullable=False,
         index=True,
     )

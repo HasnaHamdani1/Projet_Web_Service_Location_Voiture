@@ -20,11 +20,12 @@ These describe the files as they currently exist; they are not all deployment-re
 - Reservation API is in `service_reservation/`. It has `GET /reservations/{reservation_id}`, `POST /reservations`, `POST /reservations/{reservation_id}/paiement`, and `PUT /reservations/{reservation_id}/annulation`.
 - The Reservation GET response currently exposes `id`, `client_id`, `vehicule_id`, `date_debut`, `date_fin`, `prix_total`, and `statut`. It returns 404 when the reservation does not exist. The GET response is an unwrapped record; the create route currently returns the record inside a `reservation` object.
 - Successful simulated payment changes Reservation status to `CONFIRMEE`. The service also uses `EN_ATTENTE` and `ANNULEE`.
-- The SQL dump defines Contract statuses `EN_ATTENTE`, `VALIDE`, and `CLOTURE`, defaulting to `EN_ATTENTE`. It has unique keys for `numero_contrat` and `reservation_id`.
+- The new SQL dump defines Contract statuses `EN_ATTENTE`, `VALIDE`, and `CLOTURE`, defaulting to `EN_ATTENTE`. Its `contrats` table uses `numeroContrat`, `dateGeneration`, `periodePrise`, `periodeFin`, and `montantTotal`, and has unique keys for `numeroContrat` and `reservation_id`.
 - The SQL dump permits Reservation statuses `EN_ATTENTE`, `CONFIRMEE`, `ANNULEE`, and `PAYEE`. `PAYEE` is not used by the current Reservation API code.
 - The SQL dump defines Return condition values `BON`, `LEGER_DOMMAGE`, and `DOMMAGE_IMPORTANT`.
 - The Vehicle and Reservation services now accept `DATABASE_URL`; Compose points both at the shared MySQL database while direct local runs retain SQLite defaults. Their ORM mappings now use the SQL dump's singular `vehicule` and `reservation` tables; Reservation's public attribute `prix_total` maps to SQL column `montant_estime`.
-- The repository has a root Compose stack for MySQL, Vehicle, Reservation, Contract, Authentication, and the frontend, plus Dockerfiles for those services. Return is still absent and assigned to its owner. The SQL dump identifies MariaDB 10.4 as its source; Compose currently targets MySQL 8.4.13, so keep schema compatibility in the integration checklist.
+- The repository has a root Compose stack for MySQL, Vehicle, Reservation, Contract, and Authentication, plus Dockerfiles for those services. The Contract container serves its own frontend; there is no separate frontend container. Contract waits for MySQL at startup and calls Reservation when a workflow requires it, so an unavailable Reservation API does not prevent Contract from starting. Return is still absent and assigned to its owner. The SQL dump identifies MariaDB 10.4 as its source; Compose currently targets MySQL 8.4.13, so keep schema compatibility in the integration checklist.
+- GitHub `main` now provides `Base_de_données/db_location_voitures.sql` for database `db_location_voitures`. It defines plural table names and camelCase columns. Contract maps to this schema and adds its required snapshot/audit fields through migrations 002-006. Authentication now maps to `utilisateurs`, `clients`, and `administrateurs`, including `motDePasse` and the required user role. Vehicle and Reservation still map to the retired singular schema and need their owners to coordinate updates before the full stack can use it. Authentication owner should review this compatibility change in the normal Git workflow.
 
 ## 3. Rules to share across all service owners
 
@@ -36,9 +37,9 @@ Recommended ownership for the shared database:
 |---|---|
 | Vehicle (`service_vehicule`) | `vehicule` records and vehicle status |
 | Reservation (`service_reservation`) | `reservation` records and payment/cancellation state |
-| Contract (`service_contrat`) | `contrat` records and contract lifecycle |
+| Contract (`service_contrat`) | `contrats` records and contract lifecycle |
 | Return (`service_retour`) | `retour` records and return/damage assessment |
-| Authentication (service or agreed shared component) | `utilisateur`, `client`, and `administrateur` records |
+| Authentication (service or agreed shared component) | `utilisateurs`, `clients`, and `administrateurs` records |
 
 Each service is the authority for its own records. Even with one shared MySQL database, a service should use another service's REST API for that service's business data rather than reading or writing its tables directly. Keep cross-service IDs as references. Agree explicitly whether the shared schema will enforce cross-service foreign keys; if it does, migration changes must be coordinated.
 
@@ -91,7 +92,7 @@ The routes below distinguish **implemented in the repository** from **proposed f
 | Contract | `GET /contrats/{contrat_id}` | Get contract by ID, ownership-scoped | Implemented |
 | Contract | `GET /contrats/numero/{numero_contrat}` | Get contract by unique number, ownership-scoped | Implemented |
 | Contract | `POST /contrats/{contrat_id}/caution` | Admin records `{"montant_caution": 500.00}` before signature | Implemented |
-| Contract | `POST /contrats/{contrat_id}/validation` | Owning client signs/validates; status becomes `VALIDE` | Implemented |
+| Contract | `POST /contrats/{contrat_id}/validation` | Admin confirms both paper signatures have been completed; status becomes `VALIDE` | Implemented locally; team ratification pending |
 | Contract | `POST /contrats/{contrat_id}/cloture` | Admin closes validated contract after return | Implemented; Return workflow not integrated |
 | Contract | `POST /contrats/{contrat_id}/prolongations` | Admin extends a validated contract and stores an annex | Implemented in Contract; requires Reservation support below |
 | Contract | `GET /contrats/{contrat_id}/prolongations` | List extension annexes, ownership-scoped | Implemented |
@@ -141,31 +142,30 @@ Use the existing values as the baseline. The team must confirm the Reservation `
 |---|---|---|
 | Vehicle | `DISPONIBLE`, `RESERVE`, `LOUE`, `MAINTENANCE` | Keep these exact values. Only the responsible service/action may make valid transitions. |
 | Reservation | Code: `EN_ATTENTE`, `CONFIRMEE`, `ANNULEE`; SQL additionally allows `PAYEE` | Recommended: `EN_ATTENTE` → `CONFIRMEE` on successful simulated payment; `EN_ATTENTE` or eligible `CONFIRMEE` → `ANNULEE` before rental start. Remove `PAYEE` from the canonical enum unless the team defines it as a distinct state. |
-| Contract | SQL: `EN_ATTENTE`, `VALIDE`, `CLOTURE` | Create as `EN_ATTENTE` only from a confirmed Reservation; validate `EN_ATTENTE` → `VALIDE`; close `VALIDE` → `CLOTURE`. No backward transitions. After validation, contract terms are immutable; closure may change lifecycle status. |
+| Contract | SQL: `EN_ATTENTE`, `VALIDE`, `CLOTURE` | Create as `EN_ATTENTE` only from a confirmed Reservation; after both paper signatures, Admin confirms `EN_ATTENTE` → `VALIDE`; close `VALIDE` → `CLOTURE`. No backward transitions. After validation, contract terms are immutable; closure may change lifecycle status. Admin-confirmation authorization is implemented locally and pending team ratification. |
 | Return | Condition: `BON`, `LEGER_DOMMAGE`, `DOMMAGE_IMPORTANT`; fields also include late flag/days/charges | Agree which service records return completion and calls Contract to close it; agree how return condition determines the next Vehicle status and any damage/late charge. |
 
 The Contract schema currently allows a null `reservation_id`, although the business rule requires a contract to come from a reservation. Recommended: make it `NOT NULL`, retain the unique constraint, and keep `numero_contrat` unique. A duplicate contract request should return 409 rather than create another contract.
 
 ### 3.5 Authentication and authorization
 
-The Auth service now registers clients and issues HS256 JWTs with `sub` (user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`, matching the Contract service validator. The first administrator is created with the interactive `service_auth.create_admin` command; there is no public admin-registration route. Keep `JWT_SECRET` in the ignored local `.env`, never in Git. Other services should reuse this claim/role contract for protected routes.
+The Auth service now registers clients and issues HS256 JWTs with `sub` (user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`, matching the Contract service validator. The first administrator is created with the interactive `service_auth.create_admin` command; there is no public admin-registration route. Keep `JWT_SECRET` in the ignored local `.env`, never in Git. Other services should reuse this claim/role contract for protected routes. For Contract validation, the current implementation now requires an administrator to confirm that both paper signatures have been completed; this replaces the prior client-validation rule and is awaiting team ratification.
 
 ### 3.6 MySQL schema and migrations
 
-The root Compose setup currently shares MySQL across the available APIs and initializes the schema from `db_location_vehicules.sql`, followed by Contract migrations 002-005 on a fresh volume. Remaining schema and migration decisions:
+The root Compose setup currently initializes MySQL from `Base_de_données/db_location_voitures.sql` into database `db_location_voitures`, followed by Contract migrations 002-006 on a fresh `mysql_data_location_voitures` volume. Contract and Authentication map to the plural tables and camelCase columns in the dump. Remaining schema and migration decisions:
 
-1. The Vehicle and Reservation ORM mappings use the dump's singular table names; Reservation maps its API/model field `prix_total` to SQL column `montant_estime`.
-2. The SQL dump allows `PAYEE`, while Reservation code uses `CONFIRMEE`; agree whether `PAYEE` is removed or given a distinct meaning.
-3. The SQL dump was generated from MariaDB 10.4 while Compose uses MySQL 8.4.13. Verify clean-volume initialization against that image before deployment.
-4. Money currently uses Python `float` and SQL `DOUBLE`; agree on a currency and whether to migrate to fixed precision.
-5. The dump allows nullable `contrat.reservation_id`, while the Contract API requires a reservation. Coordinate a `NOT NULL` migration.
+1. Vehicle and Reservation ORM mappings still use the retired singular-table schema and need owner-coordinated alignment with the new plural/camelCase schema before the full Compose stack can run. Authentication's mapping update is implemented locally and should be reviewed by its owner.
+2. The new dump was generated from MariaDB 10.4 while Compose uses MySQL 8.4.13. Verify clean-volume initialization against that image before deployment.
+3. Money uses DECIMAL in the new SQL dump while some services still use Python `float`; agree currency and precision handling.
+4. Contract migration 006 adds `client_id` and `vehicule_id` snapshots because the base `contrats` table omits them; these support existing ownership checks and contract reads.
 
-The root Compose initialization applies the base dump and Contract migrations 002-005 only when the MySQL volume is empty. Existing volumes need an explicit migration procedure. Agree on one ordered migration process for deployment and CI; do not reapply a `CREATE TABLE` migration after the base dump has created that table.
+The root Compose initialization applies the base dump and Contract migrations 002-006 only when the MySQL volume is empty. Existing volumes need an explicit migration procedure. Agree on one ordered migration process for deployment and CI; do not apply the retired migration 001 to the new base dump.
 
 ### 3.7 Docker Compose and service discovery
 
 - Keep one root `compose.yaml` that starts the database and all services needed for the app.
-- Give Compose services stable names, for example `mysql`, `service_vehicule`, `service_reservation`, `service_contrat`, `service_retour`, and `frontend`.
+- Give Compose services stable names, for example `mysql`, `service_vehicule`, `service_reservation`, `service_contrat`, and `service_retour`. The Contract UI is packaged and served by `service_contrat`.
 - Services call each other using Compose DNS names and environment-configured base URLs, for example `http://service_reservation:8000`; never hard-code `127.0.0.1` for container-to-container calls.
 - Agree the container ports, host-published ports, and which component is exposed publicly. Use health checks and wait for MySQL readiness before migrations/services start.
 - Keep credentials in an ignored local `.env`; commit only `.env.example` with placeholders. Persist MySQL data with a named volume.
@@ -220,12 +220,12 @@ The repository currently keeps the Vehicle service files at the root and the oth
 Record an owner and decision for each item:
 
 1. Confirm the canonical Reservation paid/confirmed status (`CONFIRMEE` recommended) and whether `PAYEE` is removed or given a separate meaning.
-2. Confirm the canonical MySQL image/schema import works from a clean volume; reconcile any remaining mappings with `db_location_vehicules.sql`.
+2. Confirm the canonical MySQL image/schema import works from a clean volume; coordinate Vehicle and Reservation ORM migration to `Base_de_données/db_location_voitures.sql` and have the Authentication owner review its mapping update.
 3. Confirm team-wide Python/FastAPI/SQLAlchemy use (the existing services use it; the Contract owner has chosen Python).
 4. Choose project currency and adopt fixed-precision money storage.
 5. Add and agree role enforcement for Vehicle, Reservation, and Return endpoints using the Auth token claims.
 6. Confirm the proposed Reservation/Contract extension workflow, deposit policy, and how Return triggers Contract closure.
-7. The frontend has a repository-level implementation; the Return service is still absent and assigned to its owner. Assign owners for integration testing and ongoing Compose/schema maintenance.
+7. The Contract frontend is packaged in and served by `service_contrat`; there is no standalone frontend container. The Return service is still absent and assigned to its owner. Assign owners for integration testing and ongoing Compose/schema maintenance.
 8. Ratify the common REST paths, response/error shapes, and Reservation extension idempotency contract in section 3.2.1.
 9. Reservation-service owner: implement and document `POST /reservations/{reservation_id}/prolongations` as specified in section 3.2.1; Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
 

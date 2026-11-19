@@ -5,7 +5,7 @@ class ClientRegistration(BaseModel):
     nom: str = Field(min_length=1, max_length=100)
     email: EmailStr
     mot_de_passe: str = Field(min_length=12, max_length=128)
-    telephone: str | None = Field(default=None, max_length=30)
+    telephone: str | None = Field(default=None, max_length=20)
     adresse: str = Field(min_length=1, max_length=255)
 
     @field_validator("nom", "adresse")
