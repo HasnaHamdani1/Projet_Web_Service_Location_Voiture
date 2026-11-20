@@ -36,3 +36,39 @@ hr { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
   .grille-2, .grille-3 { grid-template-columns: 1fr; }
   .champ-moitie { max-width: 100%; }
 }
+
+/* ===== Version compacte : tout le formulaire sans défilement ===== */
+.nouveau.compact { max-width: 1200px; }
+.nouveau.compact .nouveau-header { margin-bottom: 14px; }
+.nouveau.compact .nouveau-header h1 { font-size: 1.5rem; margin: 0 0 4px; }
+.nouveau.compact .sous-titre { font-size: 13px; }
+
+.nouveau.compact .form-card { padding: 22px 26px; }
+.nouveau.compact .champ { gap: 5px; margin-bottom: 0; }
+.nouveau.compact .champ-label { font-size: 12.5px; }
+.nouveau.compact .champ input,
+.nouveau.compact .champ select,
+.nouveau.compact .champ textarea { padding: 9px 12px; font-size: 14px; }
+.nouveau.compact .champ input.total { font-size: 17px; }
+.nouveau.compact .champ textarea { resize: none; }
+
+.grille-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 16px; }
+.grille-dommage { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px 16px; align-items: start; }
+
+.mini-titre {
+  display: flex; align-items: baseline; gap: 10px;
+  margin: 18px 0 8px; font-size: 13px; font-weight: 700; color: var(--text);
+}
+.mini-titre span { font-weight: 400; font-size: 12px; color: var(--muted); }
+
+.nouveau.compact .erreur { margin: 10px 0 0; padding: 9px 12px; font-size: 13px; }
+.nouveau.compact .actions { margin-top: 18px; padding-top: 16px; }
+
+@media (max-width: 1000px) {
+  .grille-4 { grid-template-columns: repeat(2, 1fr); }
+  .grille-dommage { grid-template-columns: 1fr 1fr; }
+  .grille-dommage .champ:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .grille-4, .grille-dommage { grid-template-columns: 1fr; }
+}

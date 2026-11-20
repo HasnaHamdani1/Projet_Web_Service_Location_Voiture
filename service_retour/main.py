@@ -1,4 +1,3 @@
-
 from datetime import date
 from decimal import Decimal
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,13 +25,58 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://100.108.179.81:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://100.108.179.81:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ==========================================
+# Fonction utilitaire : date de fin de réservation
+# ==========================================
+
+def recuperer_date_fin(contrat_id: int) -> date:
+    """Retourne la date de fin prévue de la réservation liée au contrat."""
+
+    try:
+        reservation_data = (
+            retour_service.recupererDetailsReservationParContrat(contrat_id)
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    date_fin_data = reservation_data.get("dateFin")
+
+    if not date_fin_data:
+        raise HTTPException(
+            status_code=502,
+            detail="Date de fin introuvable dans la réservation."
+        )
+
+    try:
+        if isinstance(date_fin_data, date):
+            return date_fin_data
+
+        return date.fromisoformat(str(date_fin_data)[:10])
+
+    except ValueError:
+        raise HTTPException(
+            status_code=502,
+            detail="Format de date de fin invalide."
+        )
+
+
 # ==========================================
 # 1. Route d'accueil
 # ==========================================
@@ -82,8 +126,7 @@ def obtenir_tous_les_retours(
 
 
 # ==========================================
-# Récupérer les retours avec les informations
-# du contrat, de la réservation et du véhicule
+# 4. Liste des retours avec contrat, réservation et véhicule
 # ==========================================
 
 @app.get("/retours/liste")
@@ -111,16 +154,15 @@ def obtenir_liste_retours(db: Session = Depends(get_db)):
 
     resultats = db.execute(requete).mappings().all()
 
+    etats = {
+        "BON": "Bon état",
+        "LEGER_DOMMAGE": "Léger dommage",
+        "DOMMAGE_IMPORTANT": "Dommage important"
+    }
+
     liste = []
 
     for r in resultats:
-
-        etats = {
-            "BON": "Bon état",
-            "LEGER_DOMMAGE": "Léger dommage",
-            "DOMMAGE_IMPORTANT": "Dommage important"
-        }
-
         liste.append({
             "id": r["id"],
             "contrat": r["contrat"],
@@ -134,11 +176,78 @@ def obtenir_liste_retours(db: Session = Depends(get_db)):
 
     return liste
 
+
 # ==========================================
-# 4. Récupérer un retour par son identifiant
+# 5. Aperçu : retard et montant du retard
+#    (calculés avant l'enregistrement, rien n'est écrit en base)
 # ==========================================
 
-@app.get("/retours/{retour_id}", response_model=RetourResponse)
+@app.get("/retours/apercu")
+def apercu_retour(
+    numero: str,
+    date_retour: date,
+    db: Session = Depends(get_db)
+):
+
+    # Numéro de contrat (CTR-2026-008) → identifiant
+    contrat = db.execute(
+        text("SELECT id FROM contrats WHERE numeroContrat = :numero"),
+        {"numero": numero.strip()}
+    ).mappings().first()
+
+    if contrat is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Aucun contrat « {numero} » trouvé."
+        )
+
+    contrat_id = contrat["id"]
+
+    # Un retour existe-t-il déjà pour ce contrat ?
+    retour_existant = db.query(Retour).filter(
+        Retour.contrat_id == contrat_id
+    ).first()
+
+    if retour_existant is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Un retour existe déjà pour ce contrat."
+        )
+
+    # Date de fin prévue, retard et montant du retard
+    date_fin = recuperer_date_fin(contrat_id)
+
+    en_retard, duree_retard = retour_service.verifierRetard(
+        date_retour,
+        date_fin
+    )
+
+    try:
+        montant_retard = retour_service.calculerMontantRetard(
+            contrat_id,
+            duree_retard
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    return {
+        "contrat_id": contrat_id,
+        "dateFin": date_fin.isoformat(),
+        "enRetard": en_retard,
+        "dureeRetardJours": duree_retard,
+        "montantRetard": float(montant_retard)
+    }
+
+
+# ==========================================
+# 6. Récupérer un retour par son identifiant
+# ==========================================
+
+@app.get("/retours/{retour_id:int}", response_model=RetourResponse)
 def obtenir_retour(
     retour_id: int,
     db: Session = Depends(get_db)
@@ -158,7 +267,7 @@ def obtenir_retour(
 
 
 # ==========================================
-# 5. Ajouter un nouveau retour (CRUD)
+# 7. Ajouter un nouveau retour (CRUD)
 # ==========================================
 
 @app.post(
@@ -196,7 +305,7 @@ def ajouter_retour(
 
 
 # ==========================================
-# 6. Traiter automatiquement un retour
+# 8. Traiter automatiquement un retour
 # ==========================================
 
 @app.post(
@@ -220,54 +329,16 @@ def traiter_retour(
             detail="Un retour existe déjà pour ce contrat."
         )
 
-    # 1. Récupérer les informations de la réservation
-    try:
-        reservation_data = (
-            retour_service.recupererDetailsReservationParContrat(
-                retour_data.contrat_id
-            )
-        )
+    # 1. Date de fin de réservation
+    date_fin = recuperer_date_fin(retour_data.contrat_id)
 
-    except ValueError as e:
-        raise HTTPException(
-            status_code=404,
-            detail=str(e)
-        )
-
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=502,
-            detail=str(e)
-        )
-
-    # 2. Récupérer la date de fin de réservation
-    date_fin_data = reservation_data.get("dateFin")
-
-    if not date_fin_data:
-        raise HTTPException(
-            status_code=502,
-            detail="Date de fin introuvable dans la réservation."
-        )
-
-    try:
-        if isinstance(date_fin_data, date):
-            date_fin = date_fin_data
-        else:
-            date_fin = date.fromisoformat(str(date_fin_data))
-
-    except ValueError:
-        raise HTTPException(
-            status_code=502,
-            detail="Format de date de fin invalide."
-        )
-
-    # 3. Vérifier le retard
+    # 2. Vérifier le retard
     en_retard, duree_retard = retour_service.verifierRetard(
         retour_data.dateRetour,
         date_fin
     )
 
-    # 4. Calculer automatiquement le montant du retard
+    # 3. Calculer automatiquement le montant du retard
     try:
         montant_retard = retour_service.calculerMontantRetard(
             retour_data.contrat_id,
@@ -286,7 +357,7 @@ def traiter_retour(
             detail=str(e)
         )
 
-    # 5. Créer l'objet Retour
+    # 4. Créer l'objet Retour
     nouveau_retour = Retour(
         dateRetour=retour_data.dateRetour,
         etatVehicule=retour_data.etatVehicule,
@@ -299,13 +370,13 @@ def traiter_retour(
         administrateur_id=retour_data.administrateur_id
     )
 
-    # 6. Vérifier et affecter l'état du véhicule
+    # 5. Vérifier et affecter l'état du véhicule
     retour_service.verifierEtat(
         nouveau_retour,
         retour_data.etatVehicule.value
     )
 
-    # 7. Enregistrer les dommages si le véhicule est endommagé
+    # 6. Enregistrer les dommages si le véhicule est endommagé
     if nouveau_retour.etatVehicule.value != "BON":
 
         try:
@@ -321,7 +392,7 @@ def traiter_retour(
                 detail=str(e)
             )
 
-    # 8. Enregistrer le retour dans la base de données
+    # 7. Enregistrer le retour dans la base de données
     try:
         db.add(nouveau_retour)
         db.commit()
@@ -339,7 +410,7 @@ def traiter_retour(
             )
         )
 
-    # 9. Mettre à jour le statut du véhicule
+    # 8. Mettre à jour le statut du véhicule
     try:
         retour_service.mettreAJourStatutVehicule(
             retour_data.contrat_id,
@@ -356,7 +427,7 @@ def traiter_retour(
             )
         )
 
-    # 10. Clôturer le contrat
+    # 9. Clôturer le contrat
     try:
         retour_service.finaliserRetour(
             retour_data.contrat_id
@@ -376,10 +447,10 @@ def traiter_retour(
 
 
 # ==========================================
-# 7. Modifier un retour
+# 9. Modifier un retour
 # ==========================================
 
-@app.put("/retours/{retour_id}", response_model=RetourResponse)
+@app.put("/retours/{retour_id:int}", response_model=RetourResponse)
 def modifier_retour(
     retour_id: int,
     retour_data: RetourUpdate,
@@ -419,11 +490,11 @@ def modifier_retour(
 
 
 # ==========================================
-# 8. Supprimer un retour
+# 10. Supprimer un retour
 # ==========================================
 
 @app.delete(
-    "/retours/{retour_id}",
+    "/retours/{retour_id:int}",
     status_code=status.HTTP_204_NO_CONTENT
 )
 def supprimer_retour(

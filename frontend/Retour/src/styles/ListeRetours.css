@@ -39,3 +39,43 @@ tbody tr + tr td { border-top: 1px solid #f0f1f3; }
 .pagination button { border: none; background: #fff; border-radius: 8px; min-width: 36px; height: 36px; padding: 0 12px; font-weight: 600; }
 .pagination button.on { background: #000; color: #fff; }
 .pagination button:disabled { opacity: .5; cursor: default; }
+
+
+/* ===== Colonne Actions ===== */
+.actions-cell { display: flex; gap: 8px; white-space: nowrap; }
+.btn-action {
+  border: 1px solid transparent; border-radius: 8px; padding: 7px 11px;
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: background .15s;
+}
+.btn-supprimer { background: #fdecec; color: #c0392b; border-color: #f6cccc; }
+.btn-supprimer:hover { background: #fadada; }
+
+/* ===== Message de confirmation ===== */
+.info-banner {
+  background: #e6f4ec; color: #176b3a; border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 14px; font-size: 14px; font-weight: 600;
+}
+
+/* ===== Fenêtre de confirmation ===== */
+.modal-fond {
+  position: fixed; inset: 0; z-index: 50; background: rgba(10, 25, 50, .5);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-boite {
+  background: #fff; width: 100%; max-width: 440px; border-radius: 16px;
+  padding: 26px; box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+}
+.modal-boite h2 { margin: 0 0 8px; font-size: 1.25rem; }
+.modal-sous { margin: 0; color: #5b6b86; font-size: 14px; }
+.modal-erreur {
+  background: #fdecec; color: #b42318; border-radius: 8px;
+  padding: 10px 12px; margin: 14px 0 0; font-size: 13.5px;
+}
+.modal-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid #eef0f3;
+}
+.btn-danger { background: #c0392b; color: #fff; border: none; }
+.btn-danger:hover { background: #a93226; }
+.btn-danger:disabled { opacity: .6; cursor: default; }
