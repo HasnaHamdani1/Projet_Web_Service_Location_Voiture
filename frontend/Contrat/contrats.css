@@ -573,7 +573,7 @@ main:has(#app-section.admin-view) {
   box-shadow: 0 24px 75px rgba(16, 42, 67, .26);
 }
 .contract-wizard::backdrop { background: rgba(20, 43, 59, .58); backdrop-filter: blur(3px); }
-.contract-wizard-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.contract-wizard-header { display: flex; align-items: flex-start; justify-content: flex-end; gap: 20px; }
 .contract-wizard-eyebrow { margin: 0 0 4px; color: #0d9488; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .contract-wizard-header h2 { margin: 0 0 6px; font-size: clamp(1.35rem, 2.4vw, 1.9rem); }
 .contract-wizard-header p:last-child { margin: 0; color: #71869b; font-size: .86rem; }
@@ -605,9 +605,26 @@ main:has(#app-section.admin-view) {
 .confirmed-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 99px; background: #e6f5ed; color: #188454; font-size: .68rem; font-weight: 700; }
 .confirmed-pill i { width: 6px; height: 6px; border-radius: 50%; background: #20a36a; }
 .contract-wizard-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; max-width: none; margin: 0; padding: 12px 0 0; border-top: 1px solid #edf1f4; }
+.contract-identification-form .contract-wizard-actions { justify-content: flex-end; }
 .contract-reset { border: 0; background: transparent; color: #60778c; font: 700 .8rem 'DM Sans', sans-serif; cursor: pointer; }
 .contract-wizard-actions .button:disabled { opacity: .48; }
 .contract-form-error { margin: 10px 0 0; color: #b42318; font-size: .78rem; }
+.contract-details-heading { margin: 0 0 10px; }
+.contract-details-heading p { margin: 0 0 3px; color: #3372d7; font-size: .7rem; }
+.contract-details-heading h2 { margin: 0 0 4px; font-size: 1.35rem; }
+.contract-details-heading span { color: #6b8196; font-size: .72rem; }
+.details-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.details-fields label,.deposit-fields label,.contract-conditions { display: grid; gap: 6px; color: #526b82; font-size: .7rem; font-weight: 700; }
+.details-fields input,.deposit-fields input,.deposit-fields select,.contract-conditions textarea { width: 100%; min-width: 0; min-height: 38px; padding: 8px 10px; border: 1px solid #d8e2ea; border-radius: 7px; background: #fff; color: #18334d; font: 500 .75rem 'DM Sans', sans-serif; }
+.details-fields input:disabled { background: #f0f2f4; color: #71869b; opacity: 1; }
+.details-fields .contract-total { color: #1762cc; font-weight: 800; }
+.deposit-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.contract-conditions { margin-top: 12px; }
+.contract-conditions textarea { resize: vertical; }
+@media (max-width: 640px) {
+  .details-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .deposit-fields { grid-template-columns: 1fr; }
+}
 
 @media (max-width: 640px) {
   .contract-wizard { padding: 18px 16px 14px; }

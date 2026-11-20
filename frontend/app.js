@@ -242,7 +242,7 @@ $("#refresh-contracts").addEventListener("click", loadContracts);
 $("#refresh-reservations").addEventListener("click", loadAdminReservations);
 $("#new-contract-button").addEventListener("click", ouvrirNouveauContrat);
 
-async function ouvrirNouveauContrat() {
+async function ouvrirNouveauContrat(options = {}) {
   try {
     const [reservations, contrats] = await Promise.all([
       request("reservation", "/reservations"),
@@ -252,13 +252,25 @@ async function ouvrirNouveauContrat() {
       await import("./Contrat/interfaces/formulaire-identification.js");
 
     ouvrirFormulaireIdentification(reservations, contrats, state.vehicles, async reservationId => {
-      await request("contract", "/contrats", {
+      return await request("contract", "/contrats", {
         method: "POST",
         body: JSON.stringify({ reservation_id: reservationId }),
       });
-      notify("Contrat créé. Enregistrez ensuite la caution.");
-      await loadContracts();
-    });
+    }, async (contrat, reservation) => {
+      const { ouvrirFormulaireDetails } =
+        await import("./Contrat/interfaces/formulaire-details.js");
+      const vehicule = state.vehicles.find(item => Number(item.id) === Number(reservation?.vehicule_id));
+      ouvrirFormulaireDetails(contrat, reservation, vehicule, async (contratId, montant) => {
+        await request("contract", `/contrats/${contratId}/caution`, {
+          method: "POST",
+          body: JSON.stringify({ montant_caution: montant }),
+        });
+        notify("Caution enregistrée.");
+      }, () => ouvrirNouveauContrat({
+        reservationId: Number(reservation.id),
+        contrat,
+      }), loadContracts);
+    }, options.reservationId, options.contrat);
   } catch (error) {
     notify(error.message, true);
   }

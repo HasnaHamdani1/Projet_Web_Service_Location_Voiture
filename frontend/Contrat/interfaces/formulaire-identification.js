@@ -10,11 +10,11 @@ const afficherDate = valeur => {
 };
 
 /** Affiche l'étape F006 et transmet l'identifiant choisi à la création du contrat. */
-export function ouvrirFormulaireIdentification(reservations, contrats, vehicules, creerContrat) {
+export function ouvrirFormulaireIdentification(reservations, contrats, vehicules, creerContrat, continuerDetails, reservationPreselectionneeId = null, contratExistant = null) {
   const dejaUtilisees = new Set(contrats.map(contrat => Number(contrat.reservation_id)));
   const confirmables = reservations.filter(reservation =>
     ["CONFIRMEE", "CONFIRMÉE"].includes(String(reservation.statut).toUpperCase()) &&
-    !dejaUtilisees.has(Number(reservation.id))
+    (!dejaUtilisees.has(Number(reservation.id)) || Number(reservation.id) === Number(reservationPreselectionneeId))
   );
 
   const boite = document.createElement("dialog");
@@ -38,7 +38,7 @@ export function ouvrirFormulaireIdentification(reservations, contrats, vehicules
           <label>Numéro de réservation <em>Obligatoire</em>
             <select name="reservation_id" required ${confirmables.length ? "" : "disabled"}>
               <option value="">${confirmables.length ? "Choisir une réservation confirmée" : "Aucune réservation confirmée disponible"}</option>
-              ${confirmables.map(reservation => `<option value="${Number(reservation.id)}">RES-${String(reservation.id).padStart(4, "0")}</option>`).join("")}
+              ${confirmables.map(reservation => `<option value="${Number(reservation.id)}" ${Number(reservation.id) === Number(reservationPreselectionneeId) ? "selected" : ""}>RES-${String(reservation.id).padStart(4, "0")}</option>`).join("")}
             </select>
           </label>
           <label>Numéro de contrat
@@ -63,7 +63,6 @@ export function ouvrirFormulaireIdentification(reservations, contrats, vehicules
 
       <p class="contract-form-error" role="alert" hidden></p>
       <footer class="contract-wizard-actions">
-        <button class="contract-reset" type="reset">↻ Réinitialiser</button>
         <button class="button button-primary" type="submit" disabled>➜ Créer et continuer</button>
       </footer>
     </form>
@@ -92,6 +91,7 @@ export function ouvrirFormulaireIdentification(reservations, contrats, vehicules
 
   select.addEventListener("change", mettreAJourResume);
   form.addEventListener("reset", () => requestAnimationFrame(mettreAJourResume));
+  if (reservationPreselectionneeId) mettreAJourResume();
   form.addEventListener("submit", async event => {
     event.preventDefault();
     const reservationId = Number(select.value);
@@ -99,7 +99,12 @@ export function ouvrirFormulaireIdentification(reservations, contrats, vehicules
     submit.disabled = true;
     submit.textContent = "Création…";
     try {
-      await creerContrat(reservationId);
+      const contrat = contratExistant || await creerContrat(reservationId);
+      const reservation = confirmables.find(item => Number(item.id) === reservationId);
+      boite.addEventListener("close", () => {
+        boite.remove();
+        continuerDetails?.(contrat, reservation);
+      }, { once: true });
       boite.close();
     } catch (error) {
       submit.disabled = false;
