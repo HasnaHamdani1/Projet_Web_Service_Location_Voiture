@@ -39,6 +39,44 @@ def creer_contrat(db: Session, reservation_id: int, administrateur_id: int):
         raise HTTPException(status_code=409, detail="Un contrat existe déjà pour cette réservation") from exc
 
 
+def creer_contrat_valide(db: Session, reservation_id: int, administrateur_id: int,
+                         numero_contrat: str, montant_caution: Decimal):
+    """Crée et valide le contrat en une seule transaction après signature du document."""
+    reservation = reservation_client.obtenir_reservation(reservation_id)
+    if reservation.get("statut") != "CONFIRMEE":
+        raise HTTPException(status_code=409, detail="Seule une réservation confirmée peut donner lieu à un contrat")
+    contrat_existant = db.query(models.Contrat).filter_by(reservation_id=reservation_id).first()
+    if contrat_existant and contrat_existant.statut != "EN_ATTENTE":
+        raise HTTPException(status_code=409, detail="Un contrat existe déjà pour cette réservation")
+    try:
+        aujourd_hui = date.today()
+        if contrat_existant:
+            # Permet de terminer un brouillon créé par l'ancienne version du parcours.
+            contrat = contrat_existant
+            contrat.montant_caution = montant_caution
+            contrat.statut = "VALIDE"
+            contrat.date_validation = aujourd_hui
+        else:
+            contrat = models.Contrat(
+                numero_contrat=numero_contrat, date_generation=aujourd_hui, statut="VALIDE",
+                periode_prise=date.fromisoformat(str(reservation["date_debut"])),
+                periode_fin=date.fromisoformat(str(reservation["date_fin"])),
+                montant_total=Decimal(str(reservation["prix_total"])), reservation_id=reservation_id,
+                administrateur_id=administrateur_id, montant_caution=montant_caution,
+                date_validation=aujourd_hui,
+            )
+            db.add(contrat)
+        db.commit()
+        db.refresh(contrat)
+        return contrat
+    except (KeyError, TypeError, ValueError) as exc:
+        db.rollback()
+        raise HTTPException(status_code=503, detail="La réponse de réservation ne respecte pas le format attendu") from exc
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Un contrat existe déjà pour cette réservation ou ce numéro") from exc
+
+
 def ajouter_caution(db: Session, contrat: models.Contrat, montant: Decimal):
     if contrat.statut != "EN_ATTENTE":
         raise HTTPException(status_code=409, detail="La caution ne peut être modifiée qu'avant validation")

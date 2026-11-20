@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,6 +11,13 @@ class ContratCreate(BaseModel):
 
 class CautionCreate(BaseModel):
     montant_caution: Decimal = Field(ge=0, max_digits=10, decimal_places=2)
+
+
+class ContratFinalisation(BaseModel):
+    reservation_id: int = Field(gt=0)
+    numero_contrat: str = Field(pattern=r"^CTR-\d{4}-[A-F0-9]{8}$")
+    montant_caution: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    signatures_confirmees: Literal[True]
 
 
 class ContratRead(BaseModel):

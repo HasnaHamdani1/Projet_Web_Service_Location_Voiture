@@ -625,6 +625,57 @@ main:has(#app-section.admin-view) {
   .details-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .deposit-fields { grid-template-columns: 1fr; }
 }
+.validation-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.validation-summary > div { display: grid; gap: 5px; padding: 12px; border: 1px solid #e3eaf0; border-radius: 8px; background: #f8fafb; }
+.validation-summary small { color: #74889b; font-size: .67rem; }
+.validation-summary strong { color: #18334d; font-size: .78rem; }
+.contract-finish-panel { display: grid; gap: 12px; margin-top: 14px; padding: 15px; border: 1px solid #e2eaf0; border-radius: 10px; background: #f8fafb; }
+.signature-confirmation { display: flex; align-items: center; gap: 9px; color: #526b82; font-size: .76rem; cursor: pointer; }
+.signature-confirmation input { width: 18px; height: 18px; margin: 0; accent-color: #0756d9; }
+.signature-confirmation input:disabled { cursor: not-allowed; }
+.signature-confirmation-icon { display: grid; flex: 0 0 26px; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: #edf4ff; color: #0756d9; font-weight: 800; }
+.validation-actions { display: flex; align-items: center; gap: 8px; }
+.validation-actions .button { min-height: 36px; padding: 8px 12px; font-size: .75rem; }
+.contract-pdf-document { padding: 12px 4px; color: #263b50; background: #fff; }
+.pdf-document-heading { display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 2px solid #0756d9; }
+.pdf-brand { display: flex; align-items: center; gap: 7px; color: #18334d; font-size: .72rem; letter-spacing: .08em; }
+.pdf-brand span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 7px; background: #0756d9; color: white; font-weight: 800; }
+.pdf-document-title { text-align: center; }
+.pdf-document-title p { margin: 0; color: #526b82; font-size: .7rem; font-weight: 800; letter-spacing: .08em; }
+.pdf-document-title h2 { margin: 4px 0 0; color: #0756d9; font-size: 1.15rem; }
+.pdf-document-heading > small { color: #71869b; font-size: .68rem; text-align: right; }
+.pdf-section { padding: 15px 0; border-bottom: 1px solid #e4ebf0; }
+.pdf-section > h3 { margin: 0 0 10px; color: #18334d; font-size: .82rem; }
+.pdf-two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pdf-two-columns > div { padding: 11px; border: 1px solid #e3eaf0; border-radius: 8px; }
+.pdf-two-columns h4 { margin: 0 0 7px; color: #0756d9; font-size: .75rem; }
+.pdf-two-columns p { margin: 4px 0; font-size: .7rem; }
+.pdf-signatures > p { color: #526b82; font-size: .7rem; }
+.signature-blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 12px; }
+.signature-blocks > div { display: grid; gap: 5px; min-height: 118px; padding: 12px; border: 1px solid #dce5ec; border-radius: 8px; }
+.signature-blocks strong { font-size: .72rem; }
+.signature-blocks small { color: #71869b; font-size: .65rem; }
+.signature-blocks span { display: block; align-self: end; height: 42px; border-bottom: 1px solid #65798c; }
+@media (max-width: 640px) {
+  .validation-summary { grid-template-columns: 1fr; }
+  .signature-confirmation { align-items: flex-start; }
+  .validation-actions { align-items: stretch; flex-direction: column; }
+  .pdf-document-heading { grid-template-columns: 1fr; }
+  .pdf-document-title { text-align: left; }
+  .pdf-two-columns,.signature-blocks { grid-template-columns: 1fr; }
+}
+@media print {
+  @page { size: A4; margin: 14mm; }
+  html, body { width: auto !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; background: #fff !important; }
+  body > :not(.contract-validation-wizard) { display: none !important; }
+  .contract-validation-wizard[open] { display: block !important; position: static !important; inset: auto !important; width: 170mm !important; max-width: 100% !important; max-height: none !important; height: auto !important; margin: 0 auto !important; padding: 0 !important; overflow: visible !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: #fff !important; }
+  .contract-validation-wizard .contract-wizard-header,
+  .contract-validation-wizard .contract-steps,
+  .contract-validation-wizard .contract-finish-panel,
+  .contract-validation-wizard .contract-form-error,
+  .contract-validation-wizard .contract-wizard-actions { display: none !important; }
+  .contract-validation-wizard .contract-pdf-document { display: block !important; width: 100% !important; max-width: 100% !important; margin: 0 auto !important; padding: 0 !important; }
+}
 
 @media (max-width: 640px) {
   .contract-wizard { padding: 18px 16px 14px; }

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from . import metier_contrat, models, reservation_client
 from .auth import current_user, require_admin
 from .database import Base, engine, get_db
-from .schemas import CautionCreate, ContratCreate, ContratDetail, ContratRead
+from .schemas import CautionCreate, ContratCreate, ContratDetail, ContratFinalisation, ContratRead
 
 app = FastAPI(title="Service Contrat", description="Création et suivi des contrats de location.", version="1.0.0")
 origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
@@ -105,6 +105,24 @@ def valider(contrat_id: int, identity: dict = Depends(current_user), db: Session
     if identity["role"] != "CLIENT":
         raise HTTPException(status_code=403, detail="La validation est réservée au client")
     return metier_contrat.valider_contrat(db, contrat)
+
+
+@app.post("/contrats/finalisation", response_model=ContratRead, status_code=201)
+def finaliser_contrat(
+    confirmation: ContratFinalisation,
+    identity: dict = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Crée et valide le contrat à la dernière étape, après confirmation des signatures."""
+    if confirmation.signatures_confirmees is not True:
+        raise HTTPException(status_code=400, detail="La confirmation des signatures est obligatoire")
+    return metier_contrat.creer_contrat_valide(
+        db,
+        confirmation.reservation_id,
+        identity["id"],
+        confirmation.numero_contrat,
+        confirmation.montant_caution,
+    )
 
 
 @app.post("/contrats/{contrat_id}/cloture", response_model=ContratRead)

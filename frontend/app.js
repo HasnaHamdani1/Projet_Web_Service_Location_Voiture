@@ -251,25 +251,43 @@ async function ouvrirNouveauContrat(options = {}) {
     const { ouvrirFormulaireIdentification } =
       await import("./Contrat/interfaces/formulaire-identification.js");
 
-    ouvrirFormulaireIdentification(reservations, contrats, state.vehicles, async reservationId => {
-      return await request("contract", "/contrats", {
-        method: "POST",
-        body: JSON.stringify({ reservation_id: reservationId }),
-      });
-    }, async (contrat, reservation) => {
+    ouvrirFormulaireIdentification(reservations, contrats, state.vehicles, async (brouillon, reservation, vehiculeSelectionne) => {
       const { ouvrirFormulaireDetails } =
         await import("./Contrat/interfaces/formulaire-details.js");
-      const vehicule = state.vehicles.find(item => Number(item.id) === Number(reservation?.vehicule_id));
-      ouvrirFormulaireDetails(contrat, reservation, vehicule, async (contratId, montant) => {
-        await request("contract", `/contrats/${contratId}/caution`, {
-          method: "POST",
-          body: JSON.stringify({ montant_caution: montant }),
-        });
-        notify("Caution enregistrée.");
-      }, () => ouvrirNouveauContrat({
+      ouvrirFormulaireDetails(brouillon, reservation, vehiculeSelectionne, async (contrat, montant) => ({
+        ...contrat,
+        montant_caution: montant,
+      }), () => ouvrirNouveauContrat({
         reservationId: Number(reservation.id),
-        contrat,
-      }), loadContracts);
+        contrat: brouillon,
+      }), async contratMisAJour => {
+        const { ouvrirFormulaireValidation } =
+          await import("./Contrat/interfaces/formulaire-validation.js");
+        const vehicule = vehiculeSelectionne;
+        let client = null;
+        try {
+          client = await request("auth", `/auth/clients/${Number(reservation.client_id)}`);
+        } catch (error) {
+          notify(`Nom du client indisponible : ${error.message}`, true);
+        }
+        ouvrirFormulaireValidation(
+          contratMisAJour,
+          reservation,
+          vehicule,
+          client,
+          state.user,
+          contratFinal => request("contract", "/contrats/finalisation", {
+            method: "POST",
+            body: JSON.stringify({
+              reservation_id: contratFinal.reservation_id,
+              numero_contrat: contratFinal.numero_contrat,
+              montant_caution: contratFinal.montant_caution,
+              signatures_confirmees: true,
+            }),
+          }),
+          loadContracts,
+        );
+      }, loadContracts);
     }, options.reservationId, options.contrat);
   } catch (error) {
     notify(error.message, true);

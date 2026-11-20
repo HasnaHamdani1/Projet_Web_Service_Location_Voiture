@@ -9,7 +9,7 @@ const dateFr = valeur => {
   return Number.isNaN(date.getTime()) ? valeur : date.toLocaleDateString("fr-FR");
 };
 
-export function ouvrirFormulaireDetails(contrat, reservation, vehicule, enregistrerCaution, revenirIdentification, retourListe) {
+export function ouvrirFormulaireDetails(contrat, reservation, vehicule, enregistrerCaution, revenirIdentification, continuerValidation, retourListe) {
   const boite = document.createElement("dialog");
   boite.className = "contract-wizard contract-details-wizard";
   boite.setAttribute("aria-label", "Formulaire de détails du contrat");
@@ -74,6 +74,7 @@ export function ouvrirFormulaireDetails(contrat, reservation, vehicule, enregist
   const form = boite.querySelector(".deposit-form");
   const boutonSuivant = form.querySelector('[type="submit"]');
   let actionRetour = false;
+  let actionContinuer = false;
   const fermer = () => { boite.close(); };
   boite.querySelector(".contract-wizard-close").addEventListener("click", fermer);
   form.querySelector('[type="button"]').addEventListener("click", () => {
@@ -85,9 +86,10 @@ export function ouvrirFormulaireDetails(contrat, reservation, vehicule, enregist
     const montant = Number(new FormData(form).get("montant_caution"));
     if (!Number.isFinite(montant) || montant <= 0) return;
     boutonSuivant.disabled = true;
-    boutonSuivant.textContent = "Enregistrement…";
+    boutonSuivant.textContent = "Préparation…";
     try {
-      await enregistrerCaution(contrat.id, montant);
+      Object.assign(contrat, await enregistrerCaution(contrat, montant));
+      actionContinuer = true;
       boite.close();
     } catch (error) {
       boutonSuivant.disabled = false;
@@ -101,6 +103,7 @@ export function ouvrirFormulaireDetails(contrat, reservation, vehicule, enregist
   boite.addEventListener("close", () => {
     boite.remove();
     if (actionRetour) revenirIdentification?.();
+    else if (actionContinuer) continuerValidation?.(contrat);
     else retourListe?.();
   }, { once: true });
   boite.showModal();

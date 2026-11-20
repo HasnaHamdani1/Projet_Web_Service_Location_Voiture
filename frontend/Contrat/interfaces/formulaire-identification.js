@@ -9,12 +9,21 @@ const afficherDate = valeur => {
   return Number.isNaN(date.getTime()) ? valeur : date.toLocaleDateString("fr-FR");
 };
 
-/** Affiche l'étape F006 et transmet l'identifiant choisi à la création du contrat. */
-export function ouvrirFormulaireIdentification(reservations, contrats, vehicules, creerContrat, continuerDetails, reservationPreselectionneeId = null, contratExistant = null) {
+const nouveauNumeroContrat = () => {
+  const octets = crypto.getRandomValues(new Uint8Array(4));
+  const suffixe = [...octets].map(octet => octet.toString(16).padStart(2, "0")).join("").toUpperCase();
+  return `CTR-${new Date().getFullYear()}-${suffixe}`;
+};
+
+/** Affiche l'étape F006 et conserve la réservation en brouillon, sans écriture en base. */
+export function ouvrirFormulaireIdentification(reservations, contrats, vehicules, continuerDetails, reservationPreselectionneeId = null, brouillonExistant = null) {
   const dejaUtilisees = new Set(contrats.map(contrat => Number(contrat.reservation_id)));
+  const brouillonsExistants = new Map(contrats
+    .filter(contrat => contrat.statut === "EN_ATTENTE")
+    .map(contrat => [Number(contrat.reservation_id), contrat]));
   const confirmables = reservations.filter(reservation =>
     ["CONFIRMEE", "CONFIRMÉE"].includes(String(reservation.statut).toUpperCase()) &&
-    (!dejaUtilisees.has(Number(reservation.id)) || Number(reservation.id) === Number(reservationPreselectionneeId))
+    (!dejaUtilisees.has(Number(reservation.id)) || Number(reservation.id) === Number(reservationPreselectionneeId) || Number(reservation.id) === Number(brouillonExistant?.reservation_id) || brouillonsExistants.has(Number(reservation.id)))
   );
 
   const boite = document.createElement("dialog");
@@ -97,13 +106,26 @@ export function ouvrirFormulaireIdentification(reservations, contrats, vehicules
     const reservationId = Number(select.value);
     if (!reservationId) return;
     submit.disabled = true;
-    submit.textContent = "Création…";
+    submit.textContent = "Préparation…";
     try {
-      const contrat = contratExistant || await creerContrat(reservationId);
       const reservation = confirmables.find(item => Number(item.id) === reservationId);
+      const vehicule = vehicules.find(item => Number(item.id) === Number(reservation?.vehicule_id));
+      const contrat = brouillonExistant || brouillonsExistants.get(reservationId) || {
+        numero_contrat: nouveauNumeroContrat(),
+        date_generation: new Date().toISOString().slice(0, 10),
+        statut: "BROUILLON",
+        periode_prise: reservation?.date_debut,
+        periode_fin: reservation?.date_fin,
+        montant_total: reservation?.prix_total,
+        reservation_id: reservationId,
+        administrateur_id: null,
+        montant_caution: null,
+        date_validation: null,
+        date_cloture: null,
+      };
       boite.addEventListener("close", () => {
         boite.remove();
-        continuerDetails?.(contrat, reservation);
+        continuerDetails?.(contrat, reservation, vehicule);
       }, { once: true });
       boite.close();
     } catch (error) {
