@@ -49,23 +49,27 @@ async function checkHealth() {
   badge.innerHTML = `<i></i>${good ? "Services connectés" : "Certains services sont indisponibles"}`;
 }
 
-function showSignedIn() {
+async function showSignedIn() {
   $("#auth-section").hidden = true;
   $("#app-section").hidden = false;
   $("#logout-button").hidden = false;
   $("#welcome-title").textContent = `Bonjour ${state.user.nom}`;
-  $("#role-badge").textContent = state.user.role === "ADMINISTRATEUR" ? "Administrateur" : "Client";
-  $("#admin-reservations").hidden = state.user.role !== "ADMINISTRATEUR";
+  const estAdministrateur = state.user.role === "ADMINISTRATEUR";
+  document.body.classList.toggle("admin-contract-mode", estAdministrateur);
+  $("#role-badge").textContent = estAdministrateur ? "Administrateur" : "Client";
+  $("#app-section").classList.toggle("admin-view", estAdministrateur);
+  $("#admin-sidebar").hidden = !estAdministrateur;
+  $("#admin-reservations").hidden = true;
+  $("#vehicules").hidden = estAdministrateur;
   $("#my-reservations").hidden = state.user.role !== "CLIENT";
-  loadVehicles();
-  loadContracts();
+  await loadVehicles();
+  await loadContracts();
   renderMyReservations();
-  if (state.user.role === "ADMINISTRATEUR") loadAdminReservations();
 }
 
 async function loadProfile() {
   state.user = await request("auth", "/auth/me");
-  showSignedIn();
+  await showSignedIn();
 }
 
 async function loadVehicles() {
@@ -166,16 +170,18 @@ async function createContract(event) {
 
 async function loadContracts() {
   const list = $("#contract-list");
+
   try {
     const contracts = await request("contract", "/contrats");
-    if (!contracts.length) { list.innerHTML = "<div class='empty-state'>Aucun contrat à afficher.</div>"; return; }
-    list.innerHTML = contracts.map(contract => `<article class="contract-card">
-      <div class="card-top"><div><h3 class="card-title">${escapeHtml(contract.numero_contrat)}</h3><p class="card-detail">Véhicule #${Number(contract.vehicule_id)} · Réservation #${Number(contract.reservation_id)}</p><p class="card-detail">${escapeHtml(contract.periode_prise)} → ${escapeHtml(contract.periode_fin)}</p><p class="card-detail">Montant : ${Number(contract.montant_total).toFixed(2)}${contract.montant_caution == null ? " · Caution non enregistrée" : ` · Caution : ${Number(contract.montant_caution).toFixed(2)}`}</p></div>${statusBadge(contract.statut)}</div>
-      <div class="card-actions">${state.user.role === "ADMINISTRATEUR" && contract.statut === "EN_ATTENTE" && contract.montant_caution == null ? `<form data-deposit="${Number(contract.id)}"><input class="amount-input" name="montant_caution" type="number" min="0.01" step="0.01" placeholder="Caution" required><button class="mini-button" type="submit">Enregistrer</button></form>` : ""}${state.user.role === "CLIENT" && contract.statut === "EN_ATTENTE" && contract.montant_caution != null ? `<button class="mini-button" data-sign="${Number(contract.id)}">Signer et valider</button>` : ""}</div>
-    </article>`).join("");
-    list.querySelectorAll("form[data-deposit]").forEach(form => form.addEventListener("submit", recordDeposit));
-    list.querySelectorAll("[data-sign]").forEach(button => button.addEventListener("click", validateContract));
-  } catch (error) { list.innerHTML = `<div class='empty-state'>${escapeHtml(error.message)}</div>`; }
+
+    const { afficherListeContrats } =
+      await import("./Contrat/interfaces/liste-contrats.js");
+
+    afficherListeContrats(list, contracts, state.vehicles);
+  } catch (error) {
+    list.innerHTML =
+      `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+  }
 }
 
 async function recordDeposit(event) {
@@ -224,6 +230,7 @@ $("#register-form").addEventListener("submit", async event => {
 $("#logout-button").addEventListener("click", () => {
   state.token = null;
   state.user = null;
+  document.body.classList.remove("admin-contract-mode");
   sessionStorage.removeItem("access_token");
   sessionStorage.removeItem("created_reservations");
   state.reservations = [];
@@ -233,6 +240,29 @@ $("#logout-button").addEventListener("click", () => {
 });
 $("#refresh-contracts").addEventListener("click", loadContracts);
 $("#refresh-reservations").addEventListener("click", loadAdminReservations);
+$("#new-contract-button").addEventListener("click", ouvrirNouveauContrat);
+
+async function ouvrirNouveauContrat() {
+  try {
+    const [reservations, contrats] = await Promise.all([
+      request("reservation", "/reservations"),
+      request("contract", "/contrats"),
+    ]);
+    const { ouvrirFormulaireIdentification } =
+      await import("./Contrat/interfaces/formulaire-identification.js");
+
+    ouvrirFormulaireIdentification(reservations, contrats, state.vehicles, async reservationId => {
+      await request("contract", "/contrats", {
+        method: "POST",
+        body: JSON.stringify({ reservation_id: reservationId }),
+      });
+      notify("Contrat créé. Enregistrez ensuite la caution.");
+      await loadContracts();
+    });
+  } catch (error) {
+    notify(error.message, true);
+  }
+}
 
 checkHealth();
 if (state.token) loadProfile().catch(() => { sessionStorage.removeItem("access_token"); state.token = null; });
