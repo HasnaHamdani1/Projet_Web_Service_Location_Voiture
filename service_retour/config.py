@@ -5,6 +5,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-RESERVATION_API_URL = os.getenv("RESERVATION_API_URL", "http://localhost:5001")
-CONTRAT_API_URL = os.getenv("CONTRAT_API_URL", "http://localhost:5002")
-VEHICULE_API_URL = os.getenv("VEHICULE_API_URL", "http://localhost:5003")
+
+CONTRAT_API_URL = os.getenv("CONTRAT_API_URL", "http://100.84.241.24:8003")
+VEHICULE_API_URL = os.getenv("VEHICULE_API_URL", "http://100.106.223.93:8005")

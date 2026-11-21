@@ -1,5 +1,5 @@
 // Service Authentification (port publié par Docker Compose : 8004)
-const API_AUTH = "http://100.106.223.93:8004";
+const API_AUTH = "http://100.106.223.93:8014";
 const form = document.getElementById("login-form");
 const errorMessage = document.getElementById("error-message");
 const loginButton = document.getElementById("login-button");
