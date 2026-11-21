@@ -47,14 +47,50 @@
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody id="lignes-contrats"></tbody>
     </table>
   </div>
   <div class="empty-state" hidden>Aucun contrat ne correspond à la recherche.</div>
 </div>
-<div id="pagination-contrats" class="contract-pagination"></div>
+<template id="modele-ligne-contrat">
+  <tr>
+    <td class="contract-number" data-champ="numero"></td>
+    <td data-champ="client"></td>
+    <td>
+      <span class="contract-plate" data-champ="immatriculation"></span>
+      <small class="contract-vehicle-name" data-champ="vehicule"></small>
+    </td>
+    <td><span data-champ="date-debut"></span> → <span data-champ="date-fin"></span></td>
+    <td><span data-champ="montant"></span> DH</td>
+    <td><span class="status" data-champ="statut"></span></td>
+    <td>
+      <button class="contract-view-button" data-action="detail" aria-label="Consulter le contrat" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+      </button>
+    </td>
+  </tr>
+</template>
+
+<div id="pagination-contrats" class="contract-pagination">
+  <span id="pagination-resume"></span>
+  <div class="contract-page-actions">
+    <button class="mini-button" data-page="precedente" type="button">Précédent</button>
+    <span class="contract-page-number" id="page-actuelle"></span>
+    <span>…</span>
+    <span class="contract-page-total" id="nombre-pages"></span>
+    <button class="mini-button" data-page="suivante" type="button">Suivant</button>
+  </div>
+</div>
 
 <dialog id="detail-contrat" class="contract-dialog">
-  <div id="contenu-detail-contrat"></div>
+  <div id="contenu-detail-contrat">
+    <h2>Détail du contrat</h2>
+    <p><strong>Numéro :</strong> <span data-detail="numero"></span></p>
+    <p><strong>Réservation :</strong> <span data-detail="reservation"></span></p>
+    <p><strong>Période :</strong> <span data-detail="periode"></span></p>
+    <p><strong>Montant :</strong> <span data-detail="montant"></span></p>
+    <p><strong>Caution :</strong> <span data-detail="caution"></span></p>
+    <p><strong>Statut :</strong> <span data-detail="statut"></span></p>
+  </div>
   <button id="fermer-detail-contrat" class="mini-button" type="button">Fermer</button>
 </dialog>
