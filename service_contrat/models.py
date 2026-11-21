@@ -1,87 +1,20 @@
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    Date,
-    DateTime,
-    Enum as SqlEnum,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-)
+from sqlalchemy import BigInteger, Column, Date, Integer, Numeric, String
 
 from .database import Base
-from .enums import ContractStatus
 
 
-class Contract(Base):
-    """Contract record mapped to the shared schema's `contrat` table."""
+class Contrat(Base):
+    __tablename__ = "contrats"
 
-    __tablename__ = "contrat"
-
-    id = Column(
-        BigInteger().with_variant(Integer, "sqlite"),
-        primary_key=True,
-        autoincrement=True,
-    )
-    numero_contrat = Column(String(100), nullable=False, unique=True)
-    date_generation = Column(Date, nullable=False)
-    statut = Column(
-        SqlEnum(
-            ContractStatus,
-            name="statut_contrat",
-            native_enum=True,
-            validate_strings=True,
-        ),
-        nullable=False,
-        default=ContractStatus.EN_ATTENTE,
-    )
-    date_validation = Column(DateTime, nullable=True)
-    montant_caution = Column(Float, nullable=True)
-    date_enregistrement_caution = Column(DateTime, nullable=True)
-    date_cloture = Column(DateTime, nullable=True)
-    periode_prise = Column(Date, nullable=False)
-    periode_fin = Column(Date, nullable=False)
-    montant_total = Column(Float, nullable=False)
-    # The current shared SQL dump allows NULL here. This service always writes
-    # a reservation ID, and the team should make the column NOT NULL by migration.
-    reservation_id = Column(
-        BigInteger,
-        ForeignKey("reservation.id", name="fk_contrat_reservation"),
-        nullable=True,
-        unique=True,
-    )
-    client_id = Column(
-        BigInteger,
-        ForeignKey("client.id", name="fk_contrat_client"),
-        nullable=False,
-    )
-    vehicule_id = Column(
-        BigInteger,
-        ForeignKey("vehicule.id", name="fk_contrat_vehicule"),
-        nullable=False,
-    )
-
-
-class ContractExtension(Base):
-    """Append-only extension annex; validated contract terms stay unchanged."""
-
-    __tablename__ = "prolongation"
-
-    id = Column(
-        BigInteger().with_variant(Integer, "sqlite"),
-        primary_key=True,
-        autoincrement=True,
-    )
-    contrat_id = Column(
-        BigInteger,
-        ForeignKey("contrat.id", name="fk_prolongation_contrat"),
-        nullable=False,
-        index=True,
-    )
-    reservation_prolongation_id = Column(BigInteger, nullable=False, unique=True)
-    idempotency_key = Column(String(36), nullable=False, unique=True)
-    date_fin_precedente = Column(Date, nullable=False)
-    date_fin = Column(Date, nullable=False)
-    montant_supplementaire = Column(Float, nullable=False)
-    date_creation = Column(DateTime, nullable=False)
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
+    numero_contrat = Column("numeroContrat", String(50), nullable=False, unique=True, index=True)
+    date_generation = Column("dateGeneration", Date, nullable=False)
+    statut = Column(String(20), nullable=False, default="EN_ATTENTE")
+    periode_prise = Column("periodePrise", Date, nullable=False)
+    periode_fin = Column("periodeFin", Date, nullable=False)
+    montant_total = Column("montantTotal", Numeric(10, 2), nullable=False)
+    reservation_id = Column(BigInteger, nullable=False, unique=True, index=True)
+    administrateur_id = Column(BigInteger, nullable=False)
+    montant_caution = Column("montantCaution", Numeric(10, 2), nullable=True)
+    date_validation = Column("dateValidation", Date, nullable=True)
+    date_cloture = Column("dateCloture", Date, nullable=True)
