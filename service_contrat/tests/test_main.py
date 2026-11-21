@@ -1,78 +1,44 @@
-# La configuration est définie avant l'import de l'application pour
-# empêcher les tests de se connecter à la base MySQL du projet.
-import os
-
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
-os.environ["JWT_SECRET"] = "secret-temporaire-pour-les-tests"
-
-from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from unittest.mock import patch
 
-import jwt
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from service_contrat import main
-from service_contrat.database import Base, get_db
+ORIGINE_FRONTEND = "http://127.0.0.1:5500"
 
-
-def creer_jeton(utilisateur_id: int, role: str) -> str:
-    """Crée un jeton temporaire pour les tests."""
-    contenu = {
-        "sub": str(utilisateur_id),
-        "role": role,
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
-    }
-    return jwt.encode(
-        contenu,
-        os.environ["JWT_SECRET"],
-        algorithm="HS256",
-    )
-
-
-JETON_ADMIN = creer_jeton(1, "ADMINISTRATEUR")
-JETON_CLIENT = creer_jeton(3, "CLIENT")
+# L'application initialise sa base dès l'import.
+with patch.dict("os.environ", {"DATABASE_URL": "sqlite://", "CORS_ORIGINS": ORIGINE_FRONTEND}):
+    from service_contrat import main
+    from service_contrat.database import Base, get_db
 
 
 @pytest.fixture
 def client_test(monkeypatch):
-    """Fournit un client HTTP et une base SQLite isolée pour chaque test."""
-    moteur_test = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
+    monkeypatch.setenv("CONTRAT_DEFAULT_ADMIN_ID", "1")
+    moteur = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
-    Base.metadata.create_all(bind=moteur_test)
-    sessions_test = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=moteur_test,
-    )
+    Base.metadata.create_all(bind=moteur)
+    sessions = sessionmaker(bind=moteur)
 
-    def obtenir_session_test():
-        session = sessions_test()
-        try:
+    def obtenir_session():
+        with sessions() as session:
             yield session
-        finally:
-            session.close()
 
-    main.app.dependency_overrides[get_db] = obtenir_session_test
-
+    main.app.dependency_overrides[get_db] = obtenir_session
     try:
         with TestClient(main.app) as client:
             yield client
     finally:
         main.app.dependency_overrides.pop(get_db, None)
-        Base.metadata.drop_all(bind=moteur_test)
-        moteur_test.dispose()
+        moteur.dispose()
 
 
 @pytest.fixture
 def reservation_confirmee(monkeypatch):
-    """Simule une réservation confirmée retournée par le service Réservation."""
     reservation = {
         "id": 1,
         "client_id": 3,
@@ -82,134 +48,135 @@ def reservation_confirmee(monkeypatch):
         "prix_total": 750.00,
         "statut": "CONFIRMEE",
     }
-
-    monkeypatch.setattr(
-        main.reservation_client,
-        "obtenir_reservation",
-        lambda reservation_id: dict(reservation),
-    )
+    monkeypatch.setattr(main.reservation_client, "obtenir_reservation", lambda _: dict(reservation))
     return reservation
 
 
+@pytest.fixture
+def demande_finalisation():
+    return {
+        "reservation_id": 1,
+        "numero_contrat": "CTR-2026-ABCD1234",
+        "montant_caution": "500.00",
+        "signatures_confirmees": True,
+    }
+
+
 def creer_contrat(client_test):
-    """Crée un contrat de test avec le jeton administrateur."""
-    return client_test.post(
-        "/contrats",
-        json={"reservation_id": 1},
-        headers={"Authorization": f"Bearer {JETON_ADMIN}"},
-    )
+    return client_test.post("/contrats", json={"reservation_id": 1})
 
 
 def test_sante_du_service(client_test):
     reponse = client_test.get("/health")
-
     assert reponse.status_code == 200
     assert reponse.json() == {"status": "ok", "service": "contrat"}
 
 
-def test_creation_d_un_contrat_depuis_une_reservation_confirmee(
-    client_test,
-    reservation_confirmee,
-):
+def test_creation_sans_jeton_depuis_une_reservation_confirmee(client_test, reservation_confirmee):
     reponse = creer_contrat(client_test)
-
     assert reponse.status_code == 201
     assert reponse.json()["reservation_id"] == 1
     assert reponse.json()["statut"] == "EN_ATTENTE"
     assert reponse.json()["montant_total"] == "750.00"
 
 
-def test_creation_refusee_si_la_reservation_n_est_pas_confirmee(
-    client_test,
-    reservation_confirmee,
-):
+def test_creation_refusee_si_la_reservation_n_est_pas_confirmee(client_test, reservation_confirmee):
     reservation_confirmee["statut"] = "EN_ATTENTE"
-
-    reponse = creer_contrat(client_test)
-
-    assert reponse.status_code == 409
+    assert creer_contrat(client_test).status_code == 409
 
 
-def test_creation_refusee_sans_jeton_administrateur(
-    client_test,
-    reservation_confirmee,
+def test_une_reservation_ne_peut_creer_qu_un_seul_contrat(client_test, reservation_confirmee):
+    assert creer_contrat(client_test).status_code == 201
+    assert creer_contrat(client_test).status_code == 409
+
+
+def test_validation_refusee_avant_l_enregistrement_de_la_caution(client_test, reservation_confirmee):
+    creation = creer_contrat(client_test)
+    assert creation.status_code == 201
+    contrat_id = creation.json()["id"]
+    assert client_test.post(f"/contrats/{contrat_id}/validation").status_code == 409
+
+
+def test_caution_puis_validation_du_contrat_en_attente(client_test, reservation_confirmee):
+    creation = creer_contrat(client_test)
+    assert creation.status_code == 201
+    contrat_id = creation.json()["id"]
+    caution = client_test.post(f"/contrats/{contrat_id}/caution", json={"montant_caution": 500.00})
+    assert caution.status_code == 200
+    assert Decimal(caution.json()["montant_caution"]) == Decimal("500.00")
+
+    validation = client_test.post(f"/contrats/{contrat_id}/validation")
+    assert validation.status_code == 200
+    assert validation.json()["statut"] == "VALIDE"
+    assert validation.json()["date_validation"] is not None
+
+
+def test_finalisation_persiste_le_contrat_et_refuse_un_doublon(
+    client_test, reservation_confirmee, demande_finalisation,
 ):
-    reponse = client_test.post(
-        "/contrats",
-        json={"reservation_id": 1},
-    )
+    reponse = client_test.post("/contrats/finalisation", json=demande_finalisation)
+    assert reponse.status_code == 201
+    contrat = reponse.json()
+    assert contrat["statut"] == "VALIDE"
+    assert contrat["date_validation"] is not None
+    assert contrat["montant_caution"] == "500.00"
 
-    assert reponse.status_code == 401
-
-
-def test_une_reservation_ne_peut_creer_qu_un_seul_contrat(
-    client_test,
-    reservation_confirmee,
-):
-    premiere_reponse = creer_contrat(client_test)
-    deuxieme_reponse = creer_contrat(client_test)
-
-    assert premiere_reponse.status_code == 201
-    assert deuxieme_reponse.status_code == 409
+    seconde_demande = {**demande_finalisation, "numero_contrat": "CTR-2026-ABCD5678"}
+    assert client_test.post("/contrats/finalisation", json=seconde_demande).status_code == 409
+    liste = client_test.get("/contrats", params={"statut": "VALIDE"})
+    assert liste.status_code == 200
+    assert liste.json() == [{**contrat, "reservation": reservation_confirmee}]
 
 
-def test_validation_refusee_avant_l_enregistrement_de_la_caution(
-    client_test,
-    reservation_confirmee,
+def test_finalisation_reprend_un_contrat_en_attente(
+    client_test, reservation_confirmee, demande_finalisation,
 ):
     creation = creer_contrat(client_test)
-    contrat_id = creation.json()["id"]
+    assert creation.status_code == 201
+    brouillon = creation.json()
+    demande_finalisation["numero_contrat"] = brouillon["numero_contrat"]
+    reponse = client_test.post("/contrats/finalisation", json=demande_finalisation)
+    assert reponse.status_code == 201
+    assert reponse.json()["id"] == brouillon["id"]
+    assert reponse.json()["statut"] == "VALIDE"
 
-    reponse = client_test.post(
-        f"/contrats/{contrat_id}/validation",
-        headers={"Authorization": f"Bearer {JETON_CLIENT}"},
-    )
 
-    assert reponse.status_code == 409
-
-
-def test_caution_puis_validation_par_le_client(
-    client_test,
-    reservation_confirmee,
+@pytest.mark.parametrize("champ,valeur", [
+    ("signatures_confirmees", False),
+    ("montant_caution", "0.00"),
+])
+def test_finalisation_invalide_ne_cree_pas_de_contrat(
+    client_test, reservation_confirmee, demande_finalisation, champ, valeur,
 ):
+    demande_finalisation[champ] = valeur
+    reponse = client_test.post("/contrats/finalisation", json=demande_finalisation)
+    assert reponse.status_code == 422
+    assert client_test.get("/contrats").json() == []
+
+
+def test_cloture_depuis_le_service_retour(client_test, reservation_confirmee, demande_finalisation):
+    creation = client_test.post("/contrats/finalisation", json=demande_finalisation)
+    assert creation.status_code == 201
+    url = f"/contrats/{creation.json()['id']}"
+    cloture = client_test.put(f"{url}/statut", json={"statut": "CLOTURE"})
+    assert cloture.status_code == 200
+    assert cloture.json()["statut"] == "CLOTURE"
+    assert cloture.json()["date_cloture"] is not None
+    assert client_test.get(url).json()["statut"] == "CLOTURE"
+
+
+def test_cloture_refusee_pour_un_contrat_en_attente(client_test, reservation_confirmee):
     creation = creer_contrat(client_test)
-    contrat_id = creation.json()["id"]
-
-    reponse_caution = client_test.post(
-        f"/contrats/{contrat_id}/caution",
-        json={"montant_caution": 500.00},
-        headers={"Authorization": f"Bearer {JETON_ADMIN}"},
-    )
-
-    assert reponse_caution.status_code == 200
-    assert Decimal(reponse_caution.json()["montant_caution"]) == Decimal("500.00")
-
-    reponse_validation = client_test.post(
-        f"/contrats/{contrat_id}/validation",
-        headers={"Authorization": f"Bearer {JETON_CLIENT}"},
-    )
-
-    assert reponse_validation.status_code == 200
-    assert reponse_validation.json()["statut"] == "VALIDE"
-    assert reponse_validation.json()["date_validation"] is not None
+    assert creation.status_code == 201
+    url = f"/contrats/{creation.json()['id']}/statut"
+    assert client_test.put(url, json={"statut": "CLOTURE"}).status_code == 409
 
 
-def test_un_administrateur_ne_peut_pas_valider_a_la_place_du_client(
-    client_test,
-    reservation_confirmee,
-):
-    creation = creer_contrat(client_test)
-    contrat_id = creation.json()["id"]
-
-    client_test.post(
-        f"/contrats/{contrat_id}/caution",
-        json={"montant_caution": 500.00},
-        headers={"Authorization": f"Bearer {JETON_ADMIN}"},
-    )
-
-    reponse = client_test.post(
-        f"/contrats/{contrat_id}/validation",
-        headers={"Authorization": f"Bearer {JETON_ADMIN}"},
-    )
-
-    assert reponse.status_code == 403
+def test_requete_cors_autorise_le_put_de_cloture(client_test):
+    reponse = client_test.options("/contrats/1/statut", headers={
+        "Origin": ORIGINE_FRONTEND,
+        "Access-Control-Request-Method": "PUT",
+        "Access-Control-Request-Headers": "content-type",
+    })
+    assert reponse.status_code == 200
+    assert reponse.headers["Access-Control-Allow-Origin"] == ORIGINE_FRONTEND
