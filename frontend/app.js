@@ -59,6 +59,9 @@ async function showSignedIn() {
   $("#logout-button").hidden = false;
   $("#welcome-title").textContent = `Bonjour ${state.user.nom}`;
   const estAdministrateur = state.user.role === "ADMINISTRATEUR";
+  const vueContratsDirecte = estAdministrateur &&
+    new URLSearchParams(window.location.search).get("vue") === "contrats";
+  $(".hero").hidden = vueContratsDirecte;
   document.body.classList.toggle("admin-contract-mode", estAdministrateur);
   $("#role-badge").textContent = estAdministrateur ? "Administrateur" : "Client";
   $("#app-section").classList.toggle("admin-view", estAdministrateur);
@@ -69,6 +72,9 @@ async function showSignedIn() {
   await loadVehicles();
   await (await gestionContrats).chargerListe();
   renderMyReservations();
+  if (vueContratsDirecte) {
+    requestAnimationFrame(() => $("#contracts").scrollIntoView({ block: "start" }));
+  }
 }
 
 async function loadProfile() {
