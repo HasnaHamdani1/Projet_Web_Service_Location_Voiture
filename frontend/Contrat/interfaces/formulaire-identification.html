@@ -1,0 +1,44 @@
+<div class="contract-wizard-header">
+  <button class="contract-wizard-close" type="button" aria-label="Fermer">×</button>
+</div>
+
+<div class="contract-steps" aria-label="Étape 1 sur 3">
+  <div class="contract-step active"><b>1</b><span><strong>Réservation</strong><small>Identification</small></span></div>
+  <div class="contract-step"><b>2</b><span><strong>Détails &amp; caution</strong><small>Montant et conditions</small></span></div>
+  <div class="contract-step"><b>3</b><span><strong>Validation</strong><small>Impression &amp; signatures</small></span></div>
+</div>
+
+<form class="contract-identification-form">
+  <section class="contract-form-section">
+    <h3><span>▣</span> Identifiants clés</h3>
+    <div class="contract-form-fields">
+      <label>Numéro de réservation <em>Obligatoire</em>
+        <select name="reservation_id" data-reservations required>
+          <option value="">Chargement des réservations…</option>
+        </select>
+      </label>
+      <label>Numéro de contrat
+        <input value="Attribué automatiquement à la création" disabled>
+      </label>
+    </div>
+  </section>
+
+  <section class="contract-form-section reservation-summary" aria-live="polite">
+    <h3><span>▤</span> Résumé de la réservation</h3>
+    <div class="reservation-summary-fields">
+      <label>Client<input data-summary="client" value="Sélectionnez une réservation" disabled></label>
+      <label>Immatriculation<input data-summary="vehicle" value="—" disabled></label>
+      <label>Date de début<input data-summary="start" value="—" disabled></label>
+      <label>Date de fin<input data-summary="end" value="—" disabled></label>
+    </div>
+    <div class="reservation-summary-footer">
+      <strong><span aria-hidden="true">▰</span> <span data-summary="vehicle-name">Véhicule</span></strong>
+      <span class="confirmed-pill"><i></i> Réservation confirmée</span>
+    </div>
+  </section>
+
+  <p class="contract-form-error" role="alert" hidden></p>
+  <footer class="contract-wizard-actions">
+    <button class="button button-primary" type="submit" disabled>➜ Créer et continuer</button>
+  </footer>
+</form>

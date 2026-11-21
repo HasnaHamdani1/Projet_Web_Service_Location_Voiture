@@ -12,7 +12,7 @@ export function creerGestionContrats({ request, notify, escapeHtml, state }) {
     const list = document.querySelector("#contract-list");
     try {
       const contrats = await api.lister();
-      afficherListeContrats(list, contrats, state.vehicles);
+      await afficherListeContrats(list, contrats, state.vehicles);
     } catch (error) {
       list.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
     }
@@ -60,7 +60,7 @@ export function creerGestionContrats({ request, notify, escapeHtml, state }) {
         request("reservation", "/reservations"),
         api.lister(),
       ]);
-      ouvrirFormulaireIdentification(
+      await ouvrirFormulaireIdentification(
         reservations,
         contrats,
         state.vehicles,
@@ -80,7 +80,7 @@ export function creerGestionContrats({ request, notify, escapeHtml, state }) {
             } catch (error) {
               notify(`Nom du client indisponible : ${error.message}`, true);
             }
-            ouvrirFormulaireValidation(
+            await ouvrirFormulaireValidation(
               contratMisAJour,
               reservation,
               vehicule,

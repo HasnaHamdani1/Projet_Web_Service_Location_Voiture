@@ -5,7 +5,9 @@ Ce dossier regroupe les fichiers propres à l'interface Contrat :
 - `api.js` : appels aux routes du service Contrat ;
 - `contrats.js` : contrôleur et enchaînement des écrans ;
 - `contrats.css` : styles de l'espace Contrats ;
-- `interfaces/` : liste des contrats et formulaires des trois étapes.
+- `interfaces/` : un fichier HTML pour la structure de chaque interface et un fichier
+  JavaScript associé pour charger les données, réagir aux actions et gérer le parcours.
+  `contrats.css` conserve leur présentation.
 
 ## Intégration dans le frontend partagé
 
