@@ -13,6 +13,10 @@ class CautionCreate(BaseModel):
     montant_caution: Decimal = Field(ge=0, max_digits=10, decimal_places=2)
 
 
+class ContratStatutUpdate(BaseModel):
+    statut: Literal["CLOTURE"]
+
+
 class ContratFinalisation(BaseModel):
     reservation_id: int = Field(gt=0)
     numero_contrat: str = Field(pattern=r"^CTR-\d{4}-[A-F0-9]{8}$")

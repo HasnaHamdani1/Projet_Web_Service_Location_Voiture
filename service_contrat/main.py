@@ -7,7 +7,14 @@ from sqlalchemy.orm import Session
 
 from . import metier_contrat, models, reservation_client
 from .database import Base, engine, get_db
-from .schemas import CautionCreate, ContratCreate, ContratDetail, ContratFinalisation, ContratRead
+from .schemas import (
+    CautionCreate,
+    ContratCreate,
+    ContratDetail,
+    ContratFinalisation,
+    ContratRead,
+    ContratStatutUpdate,
+)
 
 app = FastAPI(title="Service Contrat", description="Création et suivi des contrats de location.", version="1.0.0")
 origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
@@ -112,7 +119,7 @@ def finaliser_contrat(
     )
 
 
-@app.post("/contrats/{contrat_id}/cloture", response_model=ContratRead)
-def cloturer(contrat_id: int, db: Session = Depends(get_db)):
+@app.put("/contrats/{contrat_id}/statut", response_model=ContratRead)
+def modifier_statut(contrat_id: int, demande: ContratStatutUpdate, db: Session = Depends(get_db)):
     contrat = _charger_contrat(db, contrat_id)
     return metier_contrat.cloturer_contrat(db, contrat)
