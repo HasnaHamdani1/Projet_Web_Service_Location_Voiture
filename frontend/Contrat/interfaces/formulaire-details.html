@@ -29,14 +29,24 @@
         <input name="montant_caution" type="number" min="0.01" step="0.01" placeholder="Ex. 500,00" required>
       </label>
       <label>Mode d’encaissement
-        <select name="mode_encaissement"><option>Carte bancaire</option><option>Espèces</option><option>Chèque</option><option>Virement</option></select>
+        <select name="mode_encaissement">
+          <option value="">Non renseigné</option>
+          <option value="CARTE">Carte bancaire</option>
+          <option value="ESPECES">Espèces</option>
+          <option value="CHEQUE">Chèque</option>
+          <option value="VIREMENT">Virement</option>
+        </select>
       </label>
       <label>Statut de la caution
-        <select name="statut_caution"><option>Reçue</option><option>À recevoir</option></select>
+        <select name="statut_caution">
+          <option value="">Non renseigné</option>
+          <option value="RECUE">Reçue</option>
+          <option value="A_RECEVOIR">À recevoir</option>
+        </select>
       </label>
     </div>
     <label class="contract-conditions">Conditions particulières
-      <textarea name="conditions" rows="3">Kilométrage illimité. Conducteur additionnel non autorisé.</textarea>
+      <textarea name="conditions_particulieres" rows="3" maxlength="1000"></textarea>
     </label>
   </section>
   <p class="contract-form-error" role="alert" hidden></p>

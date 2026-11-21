@@ -10,7 +10,6 @@ export async function ouvrirFormulaireDetails(
   contrat,
   reservation,
   vehicule,
-  enregistrerCaution,
   revenirIdentification,
   continuerValidation,
   retourListe,
@@ -42,6 +41,10 @@ export async function ouvrirFormulaireDetails(
   document.body.append(boite);
   const form = boite.querySelector(".deposit-form");
   const boutonSuivant = form.querySelector('[type="submit"]');
+  form.elements.montant_caution.value = contrat.montant_caution ?? "";
+  form.elements.mode_encaissement.value = contrat.mode_encaissement ?? "";
+  form.elements.statut_caution.value = contrat.statut_caution ?? "";
+  form.elements.conditions_particulieres.value = contrat.conditions_particulieres ?? "";
   let actionRetour = false;
   let actionContinuer = false;
   const fermer = () => boite.close();
@@ -50,23 +53,21 @@ export async function ouvrirFormulaireDetails(
     actionRetour = true;
     fermer();
   });
-  form.addEventListener("submit", async event => {
+  form.addEventListener("submit", event => {
     event.preventDefault();
-    const montant = Number(new FormData(form).get("montant_caution"));
+    const donnees = new FormData(form);
+    const montant = Number(donnees.get("montant_caution"));
     if (!Number.isFinite(montant) || montant <= 0) return;
     boutonSuivant.disabled = true;
     boutonSuivant.textContent = "Préparation…";
-    try {
-      Object.assign(contrat, await enregistrerCaution(contrat, montant));
-      actionContinuer = true;
-      boite.close();
-    } catch (error) {
-      boutonSuivant.disabled = false;
-      boutonSuivant.textContent = "➜ Suivant";
-      const message = form.querySelector(".contract-form-error");
-      message.textContent = error.message || "Impossible d’enregistrer la caution.";
-      message.hidden = false;
-    }
+    Object.assign(contrat, {
+      montant_caution: montant,
+      mode_encaissement: donnees.get("mode_encaissement") || null,
+      statut_caution: donnees.get("statut_caution") || null,
+      conditions_particulieres: donnees.get("conditions_particulieres").trim() || null,
+    });
+    actionContinuer = true;
+    boite.close();
   });
   boite.addEventListener("click", event => { if (event.target === boite) fermer(); });
   boite.addEventListener("close", () => {

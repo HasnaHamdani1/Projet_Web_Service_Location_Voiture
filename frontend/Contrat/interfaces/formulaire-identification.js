@@ -81,7 +81,9 @@ export async function ouvrirFormulaireIdentification(
     submit.textContent = "Préparation…";
     const reservation = confirmables.find(item => Number(item.id) === reservationId);
     const vehicule = vehicules.find(item => Number(item.id) === Number(reservation?.vehicule_id));
-    const contrat = brouillonExistant || brouillonsExistants.get(reservationId) || {
+    const brouillonSelectionne = Number(brouillonExistant?.reservation_id) === reservationId
+      ? brouillonExistant : brouillonsExistants.get(reservationId);
+    const contrat = brouillonSelectionne || {
       numero_contrat: nouveauNumeroContrat(),
       date_generation: new Date().toISOString().slice(0, 10),
       statut: "BROUILLON",

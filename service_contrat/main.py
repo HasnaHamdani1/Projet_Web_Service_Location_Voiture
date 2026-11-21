@@ -112,10 +112,8 @@ def finaliser_contrat(
         raise HTTPException(status_code=400, detail="La confirmation des signatures est obligatoire")
     return metier_contrat.creer_contrat_valide(
         db,
-        confirmation.reservation_id,
+        confirmation,
         _administrateur_id_par_defaut(),
-        confirmation.numero_contrat,
-        confirmation.montant_caution,
     )
 
 

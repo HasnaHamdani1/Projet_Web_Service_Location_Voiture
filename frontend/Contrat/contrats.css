@@ -615,6 +615,9 @@ main:has(#app-section.admin-view) {
 .pdf-document-heading > small { color: #71869b; font-size: .68rem; text-align: right; }
 .pdf-section { padding: 15px 0; border-bottom: 1px solid #e4ebf0; }
 .pdf-section > h3 { margin: 0 0 10px; color: #18334d; font-size: .82rem; }
+.pdf-conditions { margin-top: 12px; font-size: .75rem; }
+.pdf-conditions h4 { margin: 0 0 4px; }
+.pdf-conditions p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .pdf-two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .pdf-two-columns > div { padding: 11px; border: 1px solid #e3eaf0; border-radius: 8px; }
 .pdf-two-columns h4 { margin: 0 0 7px; color: #0756d9; font-size: .75rem; }

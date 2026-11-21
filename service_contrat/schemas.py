@@ -17,14 +17,20 @@ class ContratStatutUpdate(BaseModel):
     statut: Literal["CLOTURE"]
 
 
-class ContratFinalisation(BaseModel):
+class DetailsCaution(BaseModel):
+    mode_encaissement: Literal["CARTE", "ESPECES", "CHEQUE", "VIREMENT"] | None = None
+    statut_caution: Literal["RECUE", "A_RECEVOIR"] | None = None
+    conditions_particulieres: str | None = Field(default=None, max_length=1000)
+
+
+class ContratFinalisation(DetailsCaution):
     reservation_id: int = Field(gt=0)
     numero_contrat: str = Field(pattern=r"^CTR-\d{4}-[A-F0-9]{8}$")
     montant_caution: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
     signatures_confirmees: Literal[True]
 
 
-class ContratRead(BaseModel):
+class ContratRead(DetailsCaution):
     model_config = ConfigDict(from_attributes=True)
 
     id: int

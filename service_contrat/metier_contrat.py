@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from . import models, reservation_client
+from .schemas import ContratFinalisation
 
 
 def _numero_contrat() -> str:
@@ -39,9 +40,9 @@ def creer_contrat(db: Session, reservation_id: int, administrateur_id: int):
         raise HTTPException(status_code=409, detail="Un contrat existe déjà pour cette réservation") from exc
 
 
-def creer_contrat_valide(db: Session, reservation_id: int, administrateur_id: int,
-                         numero_contrat: str, montant_caution: Decimal):
+def creer_contrat_valide(db: Session, confirmation: ContratFinalisation, administrateur_id: int):
     """Crée et valide le contrat en une seule transaction après signature du document."""
+    reservation_id = confirmation.reservation_id
     reservation = reservation_client.obtenir_reservation(reservation_id)
     if reservation.get("statut") != "CONFIRMEE":
         raise HTTPException(status_code=409, detail="Seule une réservation confirmée peut donner lieu à un contrat")
@@ -53,19 +54,21 @@ def creer_contrat_valide(db: Session, reservation_id: int, administrateur_id: in
         if contrat_existant:
             # Permet de terminer un brouillon créé par l'ancienne version du parcours.
             contrat = contrat_existant
-            contrat.montant_caution = montant_caution
-            contrat.statut = "VALIDE"
-            contrat.date_validation = aujourd_hui
         else:
             contrat = models.Contrat(
-                numero_contrat=numero_contrat, date_generation=aujourd_hui, statut="VALIDE",
+                numero_contrat=confirmation.numero_contrat, date_generation=aujourd_hui,
                 periode_prise=date.fromisoformat(str(reservation["date_debut"])),
                 periode_fin=date.fromisoformat(str(reservation["date_fin"])),
                 montant_total=Decimal(str(reservation["prix_total"])), reservation_id=reservation_id,
-                administrateur_id=administrateur_id, montant_caution=montant_caution,
-                date_validation=aujourd_hui,
+                administrateur_id=administrateur_id,
             )
             db.add(contrat)
+        contrat.statut = "VALIDE"
+        contrat.date_validation = aujourd_hui
+        contrat.montant_caution = confirmation.montant_caution
+        for champ in ("mode_encaissement", "statut_caution", "conditions_particulieres"):
+            if champ in confirmation.model_fields_set:
+                setattr(contrat, champ, getattr(confirmation, champ))
         db.commit()
         db.refresh(contrat)
         return contrat

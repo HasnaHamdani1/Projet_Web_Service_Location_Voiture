@@ -128,6 +128,21 @@ def test_finalisation_persiste_le_contrat_et_refuse_un_doublon(
     assert liste.json() == [{**contrat, "reservation": reservation_confirmee}]
 
 
+def test_finalisation_enregistre_les_details_de_la_caution(
+    client_test, reservation_confirmee, demande_finalisation,
+):
+    details = {
+        "mode_encaissement": "ESPECES",
+        "statut_caution": "A_RECEVOIR",
+        "conditions_particulieres": "Restitution du véhicule avant 18 h.",
+    }
+    creation = client_test.post("/contrats/finalisation", json={**demande_finalisation, **details})
+    assert creation.status_code == 201
+    lecture = client_test.get(f"/contrats/{creation.json()['id']}")
+    assert lecture.status_code == 200
+    assert {champ: lecture.json()[champ] for champ in details} == details
+
+
 def test_finalisation_reprend_un_contrat_en_attente(
     client_test, reservation_confirmee, demande_finalisation,
 ):
@@ -144,6 +159,9 @@ def test_finalisation_reprend_un_contrat_en_attente(
 @pytest.mark.parametrize("champ,valeur", [
     ("signatures_confirmees", False),
     ("montant_caution", "0.00"),
+    ("mode_encaissement", "AUTRE"),
+    ("statut_caution", "AUTRE"),
+    ("conditions_particulieres", "x" * 1001),
 ])
 def test_finalisation_invalide_ne_cree_pas_de_contrat(
     client_test, reservation_confirmee, demande_finalisation, champ, valeur,

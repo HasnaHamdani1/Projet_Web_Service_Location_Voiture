@@ -36,7 +36,6 @@ export function creerGestionContrats({ request, notify, obtenirVehicules }) {
           brouillon,
           reservation,
           vehicule,
-          async (contrat, montant) => ({ ...contrat, montant_caution: montant }),
           () => ouvrirNouveauContrat({
             reservationId: Number(reservation.id),
             contrat: brouillon,

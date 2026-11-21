@@ -16,5 +16,8 @@ class Contrat(Base):
     reservation_id = Column(BigInteger, nullable=False, unique=True, index=True)
     administrateur_id = Column(BigInteger, nullable=False)
     montant_caution = Column("montantCaution", Numeric(10, 2), nullable=True)
+    mode_encaissement = Column("modeEncaissement", String(20), nullable=True)
+    statut_caution = Column("statutCaution", String(20), nullable=True)
+    conditions_particulieres = Column("conditionsParticulieres", String(1000), nullable=True)
     date_validation = Column("dateValidation", Date, nullable=True)
     date_cloture = Column("dateCloture", Date, nullable=True)

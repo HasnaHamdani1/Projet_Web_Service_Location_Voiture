@@ -10,6 +10,14 @@ const afficher = (boite, nom, valeur) => {
   boite.querySelector(`[data-contract="${nom}"]`).textContent = String(valeur ?? "—");
 };
 
+const modesEncaissement = {
+  CARTE: "Carte bancaire",
+  ESPECES: "Espèces",
+  CHEQUE: "Chèque",
+  VIREMENT: "Virement",
+};
+const statutsCaution = { RECUE: "Reçue", A_RECEVOIR: "À recevoir" };
+
 export async function ouvrirFormulaireValidation(
   contrat,
   reservation,
@@ -31,6 +39,18 @@ export async function ouvrirFormulaireValidation(
   afficher(boite, "total", `${Number(contrat.montant_total || 0).toFixed(2)} MAD`);
   afficher(boite, "caution", contrat.montant_caution == null
     ? "À enregistrer" : `${Number(contrat.montant_caution).toFixed(2)} MAD`);
+  for (const [champ, libelle] of [
+    ["mode-encaissement", modesEncaissement[contrat.mode_encaissement]],
+    ["statut-caution", statutsCaution[contrat.statut_caution]],
+  ]) {
+    if (!libelle) continue;
+    afficher(boite, champ, libelle);
+    boite.querySelector(`[data-contract="${champ}"]`).parentElement.hidden = false;
+  }
+  if (contrat.conditions_particulieres) {
+    afficher(boite, "conditions", contrat.conditions_particulieres);
+    boite.querySelector("[data-conditions]").hidden = false;
+  }
 
   document.body.append(boite);
   const fermer = () => boite.close();
