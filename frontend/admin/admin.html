@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -12,23 +12,23 @@
 <div class="dashboard">
 
     <aside class="sidebar">
-    <div class="sidebar-brand">
-        <span class="brand-icon">🚗</span>
-        <div>
-            <h2>PARC AUTO</h2>
-            <span class="badge-connecte">● Connecté</span>
+        <div class="sidebar-brand">
+            <span class="brand-icon">🚗</span>
+            <div>
+                <h2>PARC AUTO</h2>
+                <span class="badge-connecte">● Connecté</span>
+            </div>
         </div>
-    </div>
 
-   <ul class="sidebar-menu">
-    <li><a href="dashboard.html" class="sidebar-link"><span>▦</span> Dashboard</a></li>
-    <li class="active"><a href="admin.html" class="sidebar-link"><span>🚗</span> Véhicules</a></li>
-    <li><a href="#" class="sidebar-link"><span>📅</span> Réservations</a></li>
-    <li><a href="#" class="sidebar-link"><span>📄</span> Contrats</a></li>
-    <li><a href="http://localhost:5173" class="sidebar-link"><span>⬅️</span> Retours</a></li>
-    <li><a href="#" class="sidebar-link"><span>⚙️</span> Paramètres</a></li>
-</ul>
-</aside>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html" class="sidebar-link"><span>▦</span> Dashboard</a></li>
+            <li class="active"><a href="admin.html" class="sidebar-link"><span>🚗</span> Véhicules</a></li>
+            <li><a href="#" class="sidebar-link"><span>📅</span> Réservations</a></li>
+            <li><a href="#" class="sidebar-link"><span>📄</span> Contrats</a></li>
+            <li><a href="http://localhost:5173" class="sidebar-link"><span>⬅️</span> Retours</a></li>
+            <li><a href="#" class="sidebar-link"><span>⚙️</span> Paramètres</a></li>
+        </ul>
+    </aside>
 
     <main class="main-content">
 
@@ -43,8 +43,6 @@
                 <span>Administrateur</span>
             </div>
         </header>
-
-       
 
         <section id="vehicles" class="vehicles-section">
 
@@ -70,7 +68,6 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Véhicule</th>
-                                
                                 <th>Immatriculation</th>
                                 <th>Prix / jour</th>
                                 <th>Statut</th>
@@ -135,7 +132,6 @@
                            placeholder="Ex : Logan" required>
                 </div>
 
-                
                 <div class="form-group">
                     <label for="prix_par_jour">Prix par jour (DH)</label>
                     <input type="number" id="prix_par_jour"
@@ -152,6 +148,33 @@
                         <option value="LOUE">Loué</option>
                         <option value="MAINTENANCE">En maintenance</option>
                     </select>
+                </div>
+
+                <!-- Photo du véhicule -->
+                <div class="form-group full-width">
+                    <label for="image">Photo du véhicule</label>
+
+                    <input
+                        type="file"
+                        id="image"
+                        name="image"
+                        accept="image/jpeg,image/png,image/webp"
+                    >
+
+                    <small>
+                        Formats acceptés : JPG, PNG et WEBP.
+                        Taille maximale : 5 Mo.
+                    </small>
+
+                    <!-- Aperçu de la photo -->
+                    <div id="image-preview-container" hidden>
+                        <img
+                            id="image-preview"
+                            src=""
+                            alt="Aperçu de la photo du véhicule"
+                            style="max-width: 180px; max-height: 120px; margin-top: 10px; border-radius: 8px; object-fit: cover;"
+                        >
+                    </div>
                 </div>
 
             </div>
@@ -176,9 +199,10 @@
 
 
 <!-- Notification -->
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="toast" class="toast"></div>
 
-<script src="admin.js"></script>
+<!-- JavaScript -->
+<script src="./admin.js"></script>
 
 </body>
 </html>
