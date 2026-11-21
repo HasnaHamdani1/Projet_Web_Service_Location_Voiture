@@ -1,3 +1,5 @@
+import { chargerFragment } from "./charger-fragment.js";
+
 const echapper = valeur =>
   String(valeur ?? "").replace(/[&<>"']/g, caractere => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -13,7 +15,7 @@ const libelleStatut = statut => ({
 
 const dateLisible = valeur => valeur || "—";
 
-export function afficherListeContrats(conteneur, contrats, vehicules = []) {
+export async function afficherListeContrats(conteneur, contrats, vehicules = []) {
   const pageTaille = 6;
   let pageActuelle = 1;
   let recherche = "";
@@ -30,52 +32,28 @@ export function afficherListeContrats(conteneur, contrats, vehicules = []) {
 
   const statuts = [...new Set(contrats.map(c => c.statut).filter(Boolean))];
 
-  conteneur.innerHTML = `
-    <div class="contract-toolbar">
-      <label class="contract-search">
-        <span aria-hidden="true">⌕</span>
-        <input id="recherche-contrat" type="search"
-          aria-label="Rechercher un contrat"
-          placeholder="Rechercher par N° de contrat, client, immatriculation…">
-      </label>
-      <label class="contract-filter">
-        <span aria-hidden="true">☷</span>
-        <select id="filtre-statut" aria-label="Filtrer par statut">
-          <option value="">Tous les statuts</option>
-          ${statuts.map(s => `<option value="${echapper(s)}">${echapper(libelleStatut(s))}</option>`).join("")}
-        </select>
-      </label>
-    </div>
+  await chargerFragment(conteneur, "liste-contrats.html");
 
-    <div class="contract-kpis">
-      <article class="contract-kpi">
-        <div class="contract-kpi-top"><span class="contract-kpi-icon">▤</span><small>${echapper(moisLibelle)}</small></div>
-        <span class="contract-kpi-label">Total contrats ce mois</span><strong>${contratsCeMois}</strong>
-        <span class="contract-kpi-bar"><i style="width:${Math.round(contratsCeMois * 100 / maximum)}%"></i></span>
-      </article>
-      <article class="contract-kpi">
-        <div class="contract-kpi-top"><span class="contract-kpi-icon">◷</span><small>${echapper(moisLibelle)}</small></div>
-        <span class="contract-kpi-label">Contrats en attente</span><strong>${enAttente}</strong>
-        <span class="contract-kpi-bar pending"><i style="width:${Math.round(enAttente * 100 / maximum)}%"></i></span>
-      </article>
-      <article class="contract-kpi">
-        <div class="contract-kpi-top"><span class="contract-kpi-icon">✓</span><small>${echapper(moisLibelle)}</small></div>
-        <span class="contract-kpi-label">Contrats validés</span><strong>${valides}</strong>
-        <span class="contract-kpi-bar valid"><i style="width:${Math.round(valides * 100 / maximum)}%"></i></span>
-      </article>
-    </div>
+  conteneur.querySelectorAll("[data-kpi-month]").forEach(element => {
+    element.textContent = moisLibelle;
+  });
+  conteneur.querySelector("[data-kpi-month-count]").textContent = contratsCeMois;
+  conteneur.querySelector("[data-kpi-pending-count]").textContent = enAttente;
+  conteneur.querySelector("[data-kpi-valid-count]").textContent = valides;
+  conteneur.querySelector("[data-kpi-month-bar]").style.width = `${Math.round(contratsCeMois * 100 / maximum)}%`;
+  conteneur.querySelector("[data-kpi-pending-bar]").style.width = `${Math.round(enAttente * 100 / maximum)}%`;
+  conteneur.querySelector("[data-kpi-valid-bar]").style.width = `${Math.round(valides * 100 / maximum)}%`;
 
-    <div id="table-contrats"></div>
-    <div id="pagination-contrats" class="contract-pagination"></div>
-
-    <dialog id="detail-contrat" class="contract-dialog">
-      <div id="contenu-detail-contrat"></div>
-      <button id="fermer-detail-contrat" class="mini-button" type="button">Fermer</button>
-    </dialog>
-  `;
+  const selectStatut = conteneur.querySelector("#filtre-statut");
+  for (const statut of statuts) {
+    const option = document.createElement("option");
+    option.value = statut;
+    option.textContent = libelleStatut(statut);
+    selectStatut.append(option);
+  }
 
   const champRecherche = conteneur.querySelector("#recherche-contrat");
-  const filtreStatut = conteneur.querySelector("#filtre-statut");
+  const filtreStatut = selectStatut;
 
   function afficherPage() {
     const filtres = contrats.filter(contrat => {
@@ -98,51 +76,39 @@ export function afficherListeContrats(conteneur, contrats, vehicules = []) {
     const debut = (pageActuelle - 1) * pageTaille;
     const page = filtres.slice(debut, debut + pageTaille);
 
-    const table = conteneur.querySelector("#table-contrats");
+    const zoneTable = conteneur.querySelector("#table-contrats");
+    const table = zoneTable.querySelector("tbody");
+    const enveloppeTable = zoneTable.querySelector(".table-wrap");
+    const messageVide = zoneTable.querySelector(".empty-state");
 
-    if (!page.length) {
-      table.innerHTML = `<div class="empty-state">Aucun contrat ne correspond à la recherche.</div>`;
-    } else {
-      table.innerHTML = `
-        <div class="table-wrap">
-          <table class="contracts-table">
-            <thead>
-              <tr>
-                <th>N° contrat</th><th>Client</th><th>Immatriculation & véhicule</th>
-                <th>Période (début — fin)</th><th>Montant total</th><th>Statut</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${page.map(contrat => {
-                const reservation = contrat.reservation || {};
-                const vehiculeId = reservation.vehicule_id ?? contrat.vehicule_id;
-                const vehicule = vehicules.find(v => Number(v.id) === Number(vehiculeId));
-                const client = reservation.client_id
-                  ? `Client #${reservation.client_id}` : "—";
-                const formatDate = value => {
-                  if (!value) return "—";
-                  const parsed = new Date(`${value}T00:00:00`);
-                  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString("fr-FR");
-                };
-                const vehiculeTexte = vehicule?.immatriculation || (vehiculeId ? `Véhicule #${vehiculeId}` : "—");
+    enveloppeTable.hidden = !page.length;
+    messageVide.hidden = page.length > 0;
+    table.innerHTML = page.map(contrat => {
+      const reservation = contrat.reservation || {};
+      const vehiculeId = reservation.vehicule_id ?? contrat.vehicule_id;
+      const vehicule = vehicules.find(v => Number(v.id) === Number(vehiculeId));
+      const client = reservation.client_id ? `Client #${reservation.client_id}` : "—";
+      const formatDate = value => {
+        if (!value) return "—";
+        const parsed = new Date(`${value}T00:00:00`);
+        return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString("fr-FR");
+      };
+      const vehiculeTexte = vehicule?.immatriculation ||
+        (vehiculeId ? `Véhicule #${vehiculeId}` : "—");
 
-                return `
-                  <tr>
-                    <td class="contract-number">${echapper(contrat.numero_contrat)}</td>
-                    <td>${echapper(client)}</td>
-                    <td><span class="contract-plate">${echapper(vehiculeTexte)}</span>${vehicule ? `<small class="contract-vehicle-name">${echapper(vehicule.marque)} ${echapper(vehicule.modele)}</small>` : ""}</td>
-                    <td>${echapper(formatDate(contrat.periode_prise))} → ${echapper(formatDate(contrat.periode_fin))}</td>
-                    <td>${Number(contrat.montant_total || 0).toFixed(2)} DH</td>
-                    <td><span class="status status-${echapper(String(contrat.statut || "").toLowerCase())}">${echapper(libelleStatut(contrat.statut))}</span></td>
-                    <td><button class="contract-view-button" data-detail="${Number(contrat.id)}" aria-label="Consulter le contrat">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
-                    </button></td>
-                  </tr>`;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>`;
-    }
+      return `
+        <tr>
+          <td class="contract-number">${echapper(contrat.numero_contrat)}</td>
+          <td>${echapper(client)}</td>
+          <td><span class="contract-plate">${echapper(vehiculeTexte)}</span>${vehicule ? `<small class="contract-vehicle-name">${echapper(vehicule.marque)} ${echapper(vehicule.modele)}</small>` : ""}</td>
+          <td>${echapper(formatDate(contrat.periode_prise))} → ${echapper(formatDate(contrat.periode_fin))}</td>
+          <td>${Number(contrat.montant_total || 0).toFixed(2)} DH</td>
+          <td><span class="status status-${echapper(String(contrat.statut || "").toLowerCase())}">${echapper(libelleStatut(contrat.statut))}</span></td>
+          <td><button class="contract-view-button" data-detail="${Number(contrat.id)}" aria-label="Consulter le contrat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+          </button></td>
+        </tr>`;
+    }).join("");
 
     const pagination = conteneur.querySelector("#pagination-contrats");
     const premiereLigne = filtres.length ? debut + 1 : 0;

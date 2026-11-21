@@ -1,0 +1,60 @@
+<div class="contract-toolbar">
+  <label class="contract-search">
+    <span aria-hidden="true">⌕</span>
+    <input id="recherche-contrat" type="search" aria-label="Rechercher un contrat"
+      placeholder="Rechercher par N° de contrat, client, immatriculation…">
+  </label>
+  <label class="contract-filter">
+    <span aria-hidden="true">☷</span>
+    <select id="filtre-statut" aria-label="Filtrer par statut">
+      <option value="">Tous les statuts</option>
+    </select>
+  </label>
+</div>
+
+<div class="contract-kpis">
+  <article class="contract-kpi">
+    <div class="contract-kpi-top"><span class="contract-kpi-icon">▤</span><small data-kpi-month></small></div>
+    <span class="contract-kpi-label">Total contrats ce mois</span>
+    <strong data-kpi-month-count>0</strong>
+    <span class="contract-kpi-bar"><i data-kpi-month-bar></i></span>
+  </article>
+  <article class="contract-kpi">
+    <div class="contract-kpi-top"><span class="contract-kpi-icon">◷</span><small data-kpi-month></small></div>
+    <span class="contract-kpi-label">Contrats en attente</span>
+    <strong data-kpi-pending-count>0</strong>
+    <span class="contract-kpi-bar pending"><i data-kpi-pending-bar></i></span>
+  </article>
+  <article class="contract-kpi">
+    <div class="contract-kpi-top"><span class="contract-kpi-icon">✓</span><small data-kpi-month></small></div>
+    <span class="contract-kpi-label">Contrats validés</span>
+    <strong data-kpi-valid-count>0</strong>
+    <span class="contract-kpi-bar valid"><i data-kpi-valid-bar></i></span>
+  </article>
+</div>
+
+<div id="table-contrats">
+  <div class="table-wrap">
+    <table class="contracts-table">
+      <thead>
+        <tr>
+          <th>N° contrat</th>
+          <th>Client</th>
+          <th>Immatriculation &amp; véhicule</th>
+          <th>Période (début — fin)</th>
+          <th>Montant total</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="empty-state" hidden>Aucun contrat ne correspond à la recherche.</div>
+</div>
+<div id="pagination-contrats" class="contract-pagination"></div>
+
+<dialog id="detail-contrat" class="contract-dialog">
+  <div id="contenu-detail-contrat"></div>
+  <button id="fermer-detail-contrat" class="mini-button" type="button">Fermer</button>
+</dialog>
