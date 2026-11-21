@@ -33,6 +33,10 @@ function setMessage(selector, message, kind = "") {
   node.className = `form-message ${kind}`;
 }
 
+const gestionContrats = import("./Contrat/contrats.js").then(({ creerGestionContrats }) =>
+  creerGestionContrats({ request, notify, escapeHtml, state })
+);
+
 function statusBadge(value) {
   return `<span class="status status-${escapeHtml(value)}">${escapeHtml(value)}</span>`;
 }
@@ -63,7 +67,7 @@ async function showSignedIn() {
   $("#vehicules").hidden = estAdministrateur;
   $("#my-reservations").hidden = state.user.role !== "CLIENT";
   await loadVehicles();
-  await loadContracts();
+  await (await gestionContrats).chargerListe();
   renderMyReservations();
 }
 
@@ -154,55 +158,10 @@ async function loadAdminReservations() {
     const reservations = await request("reservation", "/reservations");
     if (!reservations.length) { list.innerHTML = "<p class='empty-state'>Aucune réservation.</p>"; return; }
     list.innerHTML = `<table><thead><tr><th>ID</th><th>Client</th><th>Véhicule</th><th>Période</th><th>Montant</th><th>Statut</th><th>Action</th></tr></thead><tbody>${reservations.map(row => `<tr><td>#${Number(row.id)}</td><td>${Number(row.client_id)}</td><td>${Number(row.vehicule_id)}</td><td>${escapeHtml(row.date_debut)} → ${escapeHtml(row.date_fin)}</td><td>${Number(row.prix_total).toFixed(2)}</td><td>${statusBadge(row.statut)}</td><td>${row.statut === "CONFIRMEE" ? `<button class="mini-button" data-create-contract="${Number(row.id)}">Créer contrat</button>` : "—"}</td></tr>`).join("")}</tbody></table>`;
-    list.querySelectorAll("[data-create-contract]").forEach(button => button.addEventListener("click", createContract));
+    list.querySelectorAll("[data-create-contract]").forEach(button => button.addEventListener("click", () => {
+      gestionContrats.then(gestion => gestion.creerDepuisReservation(Number(button.dataset.createContract)));
+    }));
   } catch (error) { list.innerHTML = `<p class='empty-state'>${escapeHtml(error.message)}</p>`; }
-}
-
-async function createContract(event) {
-  const button = event.currentTarget;
-  button.disabled = true;
-  try {
-    await request("contract", "/contrats", {method: "POST", body: JSON.stringify({reservation_id: Number(button.dataset.createContract)})});
-    notify("Contrat créé en attente. Enregistrez la caution avant la signature.");
-    await loadContracts();
-  } catch (error) { notify(error.message, true); button.disabled = false; }
-}
-
-async function loadContracts() {
-  const list = $("#contract-list");
-
-  try {
-    const contracts = await request("contract", "/contrats");
-
-    const { afficherListeContrats } =
-      await import("./Contrat/interfaces/liste-contrats.js");
-
-    afficherListeContrats(list, contracts, state.vehicles);
-  } catch (error) {
-    list.innerHTML =
-      `<div class="empty-state">${escapeHtml(error.message)}</div>`;
-  }
-}
-
-async function recordDeposit(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const amount = Number(new FormData(form).get("montant_caution"));
-  try {
-    await request("contract", `/contrats/${form.dataset.deposit}/caution`, {method: "POST", body: JSON.stringify({montant_caution: amount})});
-    notify("Caution enregistrée.");
-    loadContracts();
-  } catch (error) { notify(error.message, true); }
-}
-
-async function validateContract(event) {
-  const button = event.currentTarget;
-  button.disabled = true;
-  try {
-    await request("contract", `/contrats/${button.dataset.sign}/validation`, {method: "POST"});
-    notify("Contrat signé et validé.");
-    loadContracts();
-  } catch (error) { notify(error.message, true); button.disabled = false; }
 }
 
 $("#login-form").addEventListener("submit", async event => {
@@ -238,61 +197,11 @@ $("#logout-button").addEventListener("click", () => {
   $("#auth-section").hidden = false;
   $("#logout-button").hidden = true;
 });
-$("#refresh-contracts").addEventListener("click", loadContracts);
+$("#refresh-contracts").addEventListener("click", () => gestionContrats.then(gestion => gestion.chargerListe()));
 $("#refresh-reservations").addEventListener("click", loadAdminReservations);
-$("#new-contract-button").addEventListener("click", ouvrirNouveauContrat);
-
-async function ouvrirNouveauContrat(options = {}) {
-  try {
-    const [reservations, contrats] = await Promise.all([
-      request("reservation", "/reservations"),
-      request("contract", "/contrats"),
-    ]);
-    const { ouvrirFormulaireIdentification } =
-      await import("./Contrat/interfaces/formulaire-identification.js");
-
-    ouvrirFormulaireIdentification(reservations, contrats, state.vehicles, async (brouillon, reservation, vehiculeSelectionne) => {
-      const { ouvrirFormulaireDetails } =
-        await import("./Contrat/interfaces/formulaire-details.js");
-      ouvrirFormulaireDetails(brouillon, reservation, vehiculeSelectionne, async (contrat, montant) => ({
-        ...contrat,
-        montant_caution: montant,
-      }), () => ouvrirNouveauContrat({
-        reservationId: Number(reservation.id),
-        contrat: brouillon,
-      }), async contratMisAJour => {
-        const { ouvrirFormulaireValidation } =
-          await import("./Contrat/interfaces/formulaire-validation.js");
-        const vehicule = vehiculeSelectionne;
-        let client = null;
-        try {
-          client = await request("auth", `/auth/clients/${Number(reservation.client_id)}`);
-        } catch (error) {
-          notify(`Nom du client indisponible : ${error.message}`, true);
-        }
-        ouvrirFormulaireValidation(
-          contratMisAJour,
-          reservation,
-          vehicule,
-          client,
-          state.user,
-          contratFinal => request("contract", "/contrats/finalisation", {
-            method: "POST",
-            body: JSON.stringify({
-              reservation_id: contratFinal.reservation_id,
-              numero_contrat: contratFinal.numero_contrat,
-              montant_caution: contratFinal.montant_caution,
-              signatures_confirmees: true,
-            }),
-          }),
-          loadContracts,
-        );
-      }, loadContracts);
-    }, options.reservationId, options.contrat);
-  } catch (error) {
-    notify(error.message, true);
-  }
-}
+$("#new-contract-button").addEventListener("click", () =>
+  gestionContrats.then(gestion => gestion.ouvrirNouveauContrat())
+);
 
 checkHealth();
 if (state.token) loadProfile().catch(() => { sessionStorage.removeItem("access_token"); state.token = null; });
