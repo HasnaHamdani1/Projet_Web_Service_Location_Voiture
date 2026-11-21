@@ -12,9 +12,13 @@ class Vehicule(Base):
         index=True,
         autoincrement=True,
     )
-    immatriculation = Column(String, unique=True, nullable=False)
-    marque = Column(String, nullable=False)
-    modele = Column(String, nullable=False)
-    annee = Column(Integer, nullable=False)
+
+    immatriculation = Column(String(50), unique=True, nullable=False)
+    marque = Column(String(100), nullable=False)
+    modele = Column(String(100), nullable=False)
     prix_par_jour = Column(Float, nullable=False)
-    statut = Column(String, default="DISPONIBLE", nullable=False)
+    statut = Column(String(30), default="DISPONIBLE", nullable=False)
+
+    # Chemin de la photo du véhicule
+    image_url = Column(String(500), nullable=True)
+

@@ -1,4 +1,5 @@
-﻿services:
+﻿
+services:
   mysql:
     image: mysql:8.4.13
     environment:
@@ -34,6 +35,8 @@
         condition: service_healthy
     ports:
       - "8005:8000"
+    volumes:
+      - vehicule_images:/app/uploads
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 10s
@@ -140,4 +143,4 @@
 
 volumes:
   mysql_data:
-
+  vehicule_images:

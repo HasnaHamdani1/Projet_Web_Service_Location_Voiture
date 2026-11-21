@@ -3,98 +3,431 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#102a43">
-  <title>Atlas Auto | Location de voitures</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="config.js"></script>
-  <script defer src="app.js"></script>
+  <meta name="theme-color" content="#0a2f6b">
+  <title>PARC AUTO | Location de voitures</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{--b900:#071f47;--b800:#0a2f6b;--b700:#0842a0;--b600:#0b57d0;--b500:#2b73e8;--b300:#8fb4f5;--b200:#bcd4ff;--b100:#e6eefc;--b50:#f5f8ff;--ink:#14213d;--muted:#5b6b86;--line:#dbe5f5;--shadow:0 18px 50px rgba(10,47,107,.14)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font:16px/1.6 'DM Sans',system-ui,sans-serif;color:var(--ink);background:#fff}
+    h1,h2,h3{margin:0;font-family:'Manrope','DM Sans',sans-serif;letter-spacing:-.03em;line-height:1.1}
+    p{margin:0}a{color:inherit}
+    section[id]{scroll-margin-top:90px}
+    .container{max-width:1240px;margin:0 auto;padding:0 28px}
+
+    /* Boutons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid transparent;border-radius:12px;padding:13px 22px;font:700 .92rem 'DM Sans',sans-serif;text-decoration:none;cursor:pointer;transition:transform .18s,background .18s}
+    .btn:hover{transform:translateY(-2px)}
+    .btn-primary{background:linear-gradient(135deg,var(--b500),var(--b700));color:#fff;box-shadow:0 10px 24px rgba(11,87,208,.35)}
+    .btn-white{background:#fff;color:var(--b800);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+    .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.45)}
+    .btn-ghost:hover{background:rgba(255,255,255,.18)}
+
+    /* Barre supérieure */
+    .topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid transparent;transition:border-color .2s,box-shadow .2s}
+    .topbar.scrolled{border-color:var(--line);box-shadow:0 6px 24px rgba(10,47,107,.07)}
+    .topbar-in{display:flex;align-items:center;justify-content:space-between;height:74px}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;font:800 1.05rem 'Manrope',sans-serif;text-transform:uppercase}
+    .brand-mark{width:40px;height:40px;border-radius:11px;background:#000;display:grid;place-items:center;font-size:1.2rem}
+    .nav{display:flex;align-items:center;gap:4px}
+    .nav-link{padding:9px 15px;border-radius:10px;text-decoration:none;font-weight:600;font-size:.92rem;transition:background .15s,color .15s}
+    .nav-link:hover{background:var(--b100);color:var(--b700)}
+    .nav-toggle{display:none;width:44px;height:44px;border:1px solid var(--line);background:#fff;border-radius:12px;font-size:1.2rem;cursor:pointer}
+    .dropdown{position:relative;margin-left:10px}
+    .dropdown-menu{position:absolute;right:0;top:calc(100% + 12px);min-width:290px;display:none;background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:var(--shadow)}
+    .dropdown.open .dropdown-menu{display:block}
+    .dropdown-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;text-decoration:none}
+    .dropdown-item:hover{background:var(--b50)}
+    .dropdown-item strong{display:block;font:700 .95rem 'Manrope',sans-serif}
+    .dropdown-item small{color:var(--muted);font-size:.78rem}
+    .ico{width:42px;height:42px;border-radius:12px;background:var(--b100);display:grid;place-items:center;font-size:1.2rem;flex-shrink:0}
+
+    /* Photos + illustration de secours */
+    .ph-art{position:absolute;left:50%;top:50%;width:72%;transform:translate(-50%,-50%);color:var(--b500);opacity:.9}
+    .has-photo .ph-art{display:none}
+    .ph-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+    /* Hero */
+    .hero{position:relative;margin:18px auto 0;max-width:1240px;min-height:640px;border-radius:32px;overflow:hidden;color:#fff;display:flex;align-items:center;background:radial-gradient(900px 480px at 88% 8%,rgba(43,115,232,.75),transparent 62%),linear-gradient(135deg,var(--b800),var(--b900))}
+    .hero .ph-img{z-index:0;object-position:50% 62%}
+    .hero::before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(100deg,rgba(7,31,71,.9) 0%,rgba(10,47,107,.62) 48%,rgba(10,47,107,.05) 100%)}
+    .hero .ph-art{z-index:1;left:auto;right:4%;top:auto;bottom:8%;width:min(560px,50%);transform:none;opacity:1;filter:drop-shadow(0 30px 40px rgba(0,0,0,.35))}
+    .hero-content{position:relative;z-index:2;padding:90px 64px;max-width:700px}
+    .pill{display:inline-flex;align-items:center;gap:9px;padding:7px 14px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);font-size:.8rem;font-weight:600}
+    .pill i{width:8px;height:8px;border-radius:50%;background:#5be0a0;box-shadow:0 0 0 4px rgba(91,224,160,.25)}
+    .hero h1{font-size:clamp(2.6rem,5.6vw,4.8rem);margin:22px 0 20px}
+    .hero h1 em{font-style:normal;background:linear-gradient(90deg,#bcd4ff,#6fa3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .hero-text{color:#e1eaf8;font-size:1.08rem;max-width:520px;margin-bottom:32px}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:38px}
+    .hero-badges{display:flex;flex-wrap:wrap;gap:10px 22px;color:#e1eaf8;font-size:.86rem;font-weight:600}
+    .hero-badges span::before{content:'✔';margin-right:8px;color:#5be0a0}
+
+    /* Sections */
+    .section{margin-top:110px}
+    .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:28px;margin-bottom:38px}
+    .eyebrow{display:inline-block;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;font-weight:700;color:var(--b600);margin-bottom:12px}
+    .section-head h2,.about h2{font-size:clamp(1.8rem,3.4vw,2.7rem)}
+    .section-head>p{max-width:400px;color:var(--muted)}
+
+    /* Flotte (3 cartes) */
+    .cards-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:22px}
+    .cat{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;transition:transform .25s,box-shadow .25s}
+    .cat:hover{transform:translateY(-6px);box-shadow:var(--shadow)}
+    .photo{position:relative;aspect-ratio:4/3;overflow:hidden;background:linear-gradient(135deg,var(--b100),var(--b200))}
+    .photo .ph-img{transition:transform .5s}
+    .cat:hover .photo .ph-img{transform:scale(1.07)}
+    .chip{position:absolute;left:14px;top:14px;z-index:2;background:rgba(255,255,255,.92);color:var(--b700);border-radius:99px;padding:5px 12px;font-size:.72rem;font-weight:700}
+    .cat-body{padding:22px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .cat-body h3{font-size:1.25rem}
+    .cat-body p{color:var(--muted);font-size:.92rem;flex:1}
+    .cat-link{margin-top:8px;font-weight:700;font-size:.88rem;color:var(--b600);text-decoration:none}
+    .cat-link:hover{text-decoration:underline}
+
+    /* Étapes */
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:e}
+    .step{background:var(--b50);border:1px solid var(--line);border-radius:22px;padding:30px 28px}
+    .step::before{counter-increment:e;content:counter(e);display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--b500),var(--b700));color:#fff;font:800 1.2rem 'Manrope',sans-serif;margin-bottom:18px}
+    .step h3{font-size:1.2rem;margin-bottom:8px}
+    .step p{color:var(--muted);font-size:.92rem}
+
+    /* Citation */
+    .quote-band{margin-top:110px;border-radius:32px;padding:100px 28px;text-align:center;color:#fff;background:linear-gradient(rgba(7,31,71,.82),rgba(10,47,107,.88)),url('images/veh3.jpg') center/cover no-repeat,linear-gradient(135deg,var(--b800),var(--b900))}
+    .quote-band blockquote{margin:0 auto;max-width:820px}
+    .quote-band blockquote::before{content:'“';display:block;font:800 6rem/.6 'Manrope',sans-serif;color:var(--b300);margin-bottom:18px}
+    .quote-band p{font:700 clamp(1.5rem,3.2vw,2.4rem)/1.3 'Manrope',sans-serif;letter-spacing:-.03em;margin-bottom:20px}
+    .quote-band cite{font-style:normal;color:var(--b200);font-size:.9rem;letter-spacing:.08em}
+
+    /* Services */
+    .cards-services{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    .service{background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px 24px;transition:transform .25s,box-shadow .25s,border-color .25s}
+    .service:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:var(--b200)}
+    .service .ico{width:52px;height:52px;font-size:1.5rem;border-radius:15px;margin-bottom:18px}
+    .service h3{font-size:1.1rem;margin-bottom:8px}
+    .service p{color:var(--muted);font-size:.9rem}
+
+    /* À propos */
+    .about{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+    .about-photo{position:relative;aspect-ratio:4/3;border-radius:28px;overflow:hidden;background:linear-gradient(135deg,var(--b100),var(--b200));box-shadow:var(--shadow)}
+    .about h2{margin-bottom:18px}
+    .about-text{color:var(--muted);margin-bottom:14px}
+    .values{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:16px}
+    .values li{display:flex;gap:14px;align-items:flex-start}
+    .values .ico{width:40px;height:40px;font-size:1rem}
+    .values strong{display:block;font-family:'Manrope',sans-serif}
+    .values span{color:var(--muted);font-size:.9rem}
+
+    /* Appel à l'action */
+    .cta{margin-top:110px;border-radius:32px;padding:70px 28px;text-align:center;color:#fff;background:radial-gradient(700px 300px at 85% 0%,rgba(111,163,255,.55),transparent 60%),linear-gradient(135deg,var(--b700),var(--b900))}
+    .cta h2{font-size:clamp(1.8rem,3.6vw,2.8rem);margin-bottom:12px}
+    .cta p{color:#cfdcf3;max-width:520px;margin:0 auto 28px}
+    .cta .btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+
+    /* Pied de page */
+    footer{margin-top:110px;background:var(--b900);color:#cfdcf3}
+    .foot{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;padding:60px 28px 40px}
+    footer .brand{color:#fff;margin-bottom:14px}
+    footer h4{margin:0 0 14px;color:#fff;font:700 .95rem 'Manrope',sans-serif}
+    footer ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+    footer a{text-decoration:none;font-size:.92rem}
+    footer a:hover{color:#fff;text-decoration:underline}
+    .foot-note{border-top:1px solid rgba(255,255,255,.12);padding:20px 28px;font-size:.82rem;color:#8ea6cf}
+
+    /* Apparition au défilement */
+    .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+    .reveal.visible{opacity:1;transform:none}
+    @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none;transition:none}}
+
+    /* Responsive */
+    @media (max-width:1000px){
+      .cards-services{grid-template-columns:repeat(2,1fr)}
+      .steps{grid-template-columns:1fr}
+      .about{grid-template-columns:1fr;gap:30px}
+      .hero-content{padding:70px 40px}
+      .foot{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:800px){
+      .nav-toggle{display:block}
+      .nav{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;align-items:stretch;gap:4px;background:#fff;border-bottom:1px solid var(--line);padding:14px 28px 20px;box-shadow:var(--shadow)}
+      .nav.open{display:flex}
+      .nav-link{padding:13px 14px}
+      .dropdown{margin:8px 0 0}
+      .dropdown>.btn{width:100%}
+      .dropdown-menu{position:static;margin-top:8px;box-shadow:none}
+      .section-head{flex-direction:column;align-items:flex-start;gap:10px}
+    }
+    @media (max-width:620px){
+      .container{padding:0 18px}
+      .hero{margin:12px 12px 0;border-radius:24px;min-height:560px}
+      .hero-content{padding:54px 24px}
+      .cards-services{grid-template-columns:1fr}
+      .section,.quote-band,.cta,footer{margin-top:72px}
+      .quote-band{padding:64px 20px;border-radius:24px}
+      .cta{padding:48px 20px;border-radius:24px}
+      .foot{grid-template-columns:1fr;padding:44px 18px 30px}
+    }
+  </style>
+  <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#accueil" aria-label="Atlas Auto, accueil">
-      <span class="brand-mark">A</span>
-      <span>atlas<span class="brand-light">auto</span></span>
-    </a>
-    <div class="topbar-actions">
-      <span id="connection-status" class="connection"><i></i> Vérification des services…</span>
-      <button id="logout-button" class="button button-quiet" hidden>Déconnexion</button>
+
+  <!-- Illustration de voiture (affichée tant qu'une photo manque) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="car" viewBox="0 0 400 160">
+      <path fill="currentColor" d="M18 116C18 102 28 96 44 92L100 80L142 44C150 38 158 35 168 35H252C264 35 274 39 282 47L318 82L362 90C378 93 384 102 384 114V124C384 130 380 134 374 134H26C21 134 18 130 18 124Z"/>
+      <path fill="rgba(255,255,255,.55)" d="M148 80L176 50H212V80ZM222 80V50H252C258 50 262 52 266 56L292 80Z"/>
+      <circle cx="110" cy="134" r="25" fill="#071f47"/><circle cx="110" cy="134" r="11" fill="#bcd4ff"/>
+      <circle cx="300" cy="134" r="25" fill="#071f47"/><circle cx="300" cy="134" r="11" fill="#bcd4ff"/>
+    </symbol>
+  </svg>
+
+  <!-- ===== Barre supérieure ===== -->
+  <header class="topbar" id="topbar">
+    <div class="container topbar-in">
+      <a class="brand" href="#accueil" aria-label="PARC AUTO, accueil">
+        <span class="brand-mark">🚗</span><span>PARC AUTO</span>
+      </a>
+
+      <button id="nav-toggle" class="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+
+      <nav id="nav" class="nav" aria-label="Navigation principale">
+        <a class="nav-link" href="#accueil">Accueil</a>
+        <a class="nav-link" href="#apropos">À propos</a>
+        <a class="nav-link" href="#services">Nos services</a>
+
+        <div class="dropdown" id="connexion-menu">
+          <button class="btn btn-primary" id="connexion-btn" aria-haspopup="true" aria-expanded="false">Connexion <span aria-hidden="true">▾</span></button>
+          <div class="dropdown-menu" role="menu">
+            <a class="dropdown-item" role="menuitem" href="admin/login.html">
+              <span class="ico">🛡️</span>
+              <span><strong>Administrateur</strong><small>Gérer le parc, les contrats et les retours</small></span>
+            </a>
+            <a class="dropdown-item" role="menuitem" href="client.html#auth-section">
+              <span class="ico">👤</span>
+              <span><strong>Client</strong><small>Réserver et suivre mes locations</small></span>
+            </a>
+          </div>
+        </div>
+      </nav>
     </div>
   </header>
 
-  <main id="accueil">
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Votre prochaine route commence ici</p>
-        <h1>Louez la voiture<br><em>qui vous ressemble.</em></h1>
-        <p class="hero-description">Choisissez votre véhicule, réservez vos dates et partez l’esprit tranquille.</p>
-        <a class="button button-light" href="#vehicules">Découvrir les véhicules <span aria-hidden="true">↓</span></a>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="sun"></div>
-        <div class="road"></div>
-        <div class="car-art"><span class="car-window"></span><span class="wheel wheel-one"></span><span class="wheel wheel-two"></span></div>
-        <span class="art-label">LIBERTÉ<br>EN ROUTE</span>
+  <main>
+
+    <!-- ===== Accueil ===== -->
+    <section id="accueil" class="hero" data-photo>
+      <img class="ph-img" data-ph src="images/veh5.jpg" alt="Voitures PARC AUTO au coucher du soleil">
+      <svg class="ph-art" viewBox="0 0 400 160" aria-hidden="true"><use href="#car"/></svg>
+
+      <div class="hero-content">
+        <span class="pill"><i></i> Location de voitures en ligne</span>
+        <h1>Louez la voiture <em>qui vous ressemble.</em></h1>
+        <p class="hero-text">Choisissez votre véhicule, réservez vos dates et partez l’esprit tranquille. PARC AUTO simplifie la location, du premier clic jusqu’au retour du véhicule.</p>
+        <div class="hero-actions">
+          <a class="btn btn-white" href="client.html#vehicules">Découvrir les véhicules →</a>
+          <a class="btn btn-ghost" href="client.html#auth-section">Créer un compte</a>
+        </div>
+        <div class="hero-badges">
+          <span>Réservation en ligne</span><span>Contrat clair</span><span>Retour suivi</span>
+        </div>
       </div>
     </section>
 
-    <section id="auth-section" class="auth-section">
-      <div class="section-heading compact-heading">
-        <div><p class="eyebrow">Espace client</p><h2>Connectez-vous pour réserver</h2></div>
-        <p>Déjà inscrit ? Connectez-vous. Nouveau ici ? Créez votre compte en quelques instants.</p>
+    <!-- ===== Notre flotte ===== -->
+    <section id="flotte" class="container section">
+      <div class="section-head reveal">
+        <div><span class="eyebrow">Notre flotte</span><h2>Un véhicule pour<br>chaque trajet</h2></div>
+        <p>De la compacte dynamique au modèle premium, trouvez la voiture adaptée à votre voyage.</p>
       </div>
-      <div class="auth-grid">
-        <form id="login-form" class="panel form-panel">
-          <h3>Connexion</h3>
-          <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
-          <label>Mot de passe<input name="mot_de_passe" type="password" autocomplete="current-password" required></label>
-          <button class="button button-primary" type="submit">Se connecter</button>
-          <p id="login-message" class="form-message" aria-live="polite"></p>
-        </form>
-        <form id="register-form" class="panel form-panel">
-          <h3>Créer un compte client</h3>
-          <div class="field-row">
-            <label>Nom complet<input name="nom" autocomplete="name" maxlength="100" required></label>
-            <label>Téléphone<input name="telephone" type="tel" autocomplete="tel" maxlength="30"></label>
+
+      <div class="cards-3">
+        <article class="cat reveal">
+          <div class="photo" data-photo>
+            <span class="chip">Dynamique</span>
+            <svg class="ph-art" viewBox="0 0 400 160" aria-hidden="true"><use href="#car"/></svg>
+            <img class="ph-img" data-ph src="images/veh4.jpg" alt="Compacte sportive" loading="lazy">
           </div>
-          <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
-          <label>Adresse<input name="adresse" autocomplete="street-address" maxlength="255" required></label>
-          <label>Mot de passe<input name="mot_de_passe" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><small>12 caractères minimum</small></label>
-          <button class="button button-outline" type="submit">Créer mon compte</button>
-          <p id="register-message" class="form-message" aria-live="polite"></p>
-        </form>
+          <div class="cat-body">
+            <h3>Compactes</h3>
+            <p>Maniables et dynamiques, parfaites pour la ville comme pour la route.</p>
+            <a class="cat-link" href="client.html#vehicules">Voir les véhicules →</a>
+          </div>
+        </article>
+
+        <article class="cat reveal">
+          <div class="photo" data-photo>
+            <span class="chip">Espace</span>
+            <svg class="ph-art" viewBox="0 0 400 160" aria-hidden="true"><use href="#car"/></svg>
+            <img class="ph-img" data-ph src="images/veh1.jpg" alt="veh1" loading="lazy">
+          </div>
+          <div class="cat-body">
+            <h3>SUV et familiales</h3>
+            <p>Spacieux et polyvalents, parfaits pour partir en famille ou entre amis.</p>
+            <a class="cat-link" href="client.html#vehicules">Voir les véhicules →</a>
+          </div>
+        </article>
+
+        <article class="cat reveal">
+          <div class="photo" data-photo>
+            <span class="chip">Premium</span>
+            <svg class="ph-art" viewBox="0 0 400 160" aria-hidden="true"><use href="#car"/></svg>
+            <img class="ph-img" data-ph src="images/veh3.jpg" alt="Voiture veh3" loading="lazy">
+          </div>
+          <div class="cat-body">
+            <h3>Premium</h3>
+            <p>Pour les occasions spéciales : performance, style et sensations de conduite.</p>
+            <a class="cat-link" href="client.html#vehicules">Voir les véhicules →</a>
+          </div>
+        </article>
       </div>
     </section>
 
-    <section id="app-section" hidden>
-      <div class="welcome-row">
-        <div><p class="eyebrow">Bienvenue</p><h2 id="welcome-title">Votre espace</h2></div>
-        <span id="role-badge" class="role-badge"></span>
+    <!-- ===== Comment ça marche ===== -->
+    <section class="container section">
+      <div class="section-head reveal">
+        <div><span class="eyebrow">Simple et rapide</span><h2>Comment ça marche ?</h2></div>
+        <p>Trois étapes suffisent pour passer de l’envie de partir au volant.</p>
       </div>
-
-      <section id="admin-reservations" class="panel admin-panel" hidden>
-        <div class="section-heading"><div><p class="eyebrow">Administration</p><h2>Réservations à traiter</h2></div><button id="refresh-reservations" class="button button-outline">Actualiser</button></div>
-        <div id="reservation-list" class="table-wrap"></div>
-      </section>
-
-      <section id="vehicules" class="content-section">
-        <div class="section-heading"><div><p class="eyebrow">Notre flotte</p><h2>Un véhicule pour chaque trajet</h2></div><p>Indiquez vos dates pour vérifier la disponibilité.</p></div>
-        <div id="vehicle-grid" class="vehicle-grid"><div class="loading-card">Chargement des véhicules…</div></div>
-      </section>
-
-      <section id="my-reservations" class="content-section" hidden>
-        <div class="section-heading"><div><p class="eyebrow">Vos demandes</p><h2>Réservations créées ici</h2></div></div>
-        <div id="my-reservation-list" class="reservation-grid"></div>
-        <p class="helper-text">Cette liste reflète les réservations créées pendant cette session. Votre service Réservation ne propose pas encore de route pour lister uniquement vos réservations.</p>
-      </section>
-
-      <section id="contracts" class="content-section">
-        <div class="section-heading"><div><p class="eyebrow">Documents</p><h2>Contrats de location</h2></div><button id="refresh-contracts" class="button button-outline">Actualiser</button></div>
-        <div id="contract-list" class="contract-grid"><div class="empty-state">Connectez-vous pour consulter vos contrats.</div></div>
-      </section>
+      <div class="steps">
+        <div class="step reveal"><h3>Choisissez</h3><p>Parcourez les véhicules disponibles et sélectionnez celui qui correspond à votre trajet.</p></div>
+        <div class="step reveal"><h3>Réservez</h3><p>Indiquez vos dates et confirmez en ligne depuis votre espace client.</p></div>
+        <div class="step reveal"><h3>Roulez</h3><p>Récupérez votre véhicule, profitez de la route, puis restituez-le à la date prévue.</p></div>
+      </div>
     </section>
+
+    <!-- ===== Citation ===== -->
+    <section class="container">
+      <div class="quote-band reveal" aria-label="Citation">
+        <blockquote>
+          <p>Chaque route est une promesse, chaque voiture une liberté.</p>
+          <cite>— L’équipe PARC AUTO</cite>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- ===== Nos services ===== -->
+    <section id="services" class="container section">
+      <div class="section-head reveal">
+        <div><span class="eyebrow">Nos services</span><h2>Tout pour louer<br>sans stress</h2></div>
+        <p>Une plateforme complète qui accompagne le client et l’équipe de gestion à chaque étape.</p>
+      </div>
+      <div class="cards-services">
+        <article class="service reveal"><div class="ico">🚗</div><h3>Un parc varié</h3><p>Consultez les véhicules disponibles, leurs caractéristiques et leurs tarifs en quelques clics.</p></article>
+        <article class="service reveal"><div class="ico">📅</div><h3>Réservation en ligne</h3><p>Choisissez vos dates et réservez à tout moment, depuis votre espace client.</p></article>
+        <article class="service reveal"><div class="ico">📄</div><h3>Contrats suivis</h3><p>Chaque location donne lieu à un contrat clair, consultable et suivi jusqu’à sa clôture.</p></article>
+        <article class="service reveal"><div class="ico">↩️</div><h3>Retour contrôlé</h3><p>État du véhicule, retard éventuel et dommages sont enregistrés lors de chaque restitution.</p></article>
+      </div>
+    </section>
+
+    <!-- ===== À propos ===== -->
+    <section id="apropos" class="container section">
+      <div class="about">
+        <div class="about-photo reveal" data-photo>
+          <svg class="ph-art" viewBox="0 0 400 160" aria-hidden="true"><use href="#car"/></svg>
+          <img class="ph-img" data-ph src="images/veh6.jpg" alt="L’équipe PARC AUTO" loading="lazy">
+        </div>
+        <div class="reveal">
+          <span class="eyebrow">À propos</span>
+          <h2>Une location simple<br>et transparente</h2>
+          <p class="about-text">PARC AUTO est une application de gestion de location de voitures. Elle met en relation les clients et l’équipe qui gère le parc : réservation, contrat, suivi du véhicule et retour sont réunis au même endroit.</p>
+          <p class="about-text">Notre objectif : une expérience claire pour le client, et des outils fiables pour les administrateurs.</p>
+          <ul class="values">
+            <li><span class="ico">✔</span><div><strong>Clarté</strong><span>Des informations lisibles à chaque étape.</span></div></li>
+            <li><span class="ico">🔒</span><div><strong>Sécurité</strong><span>Un accès séparé pour les clients et les administrateurs.</span></div></li>
+            <li><span class="ico">⚡</span><div><strong>Efficacité</strong><span>Réserver, suivre et restituer sans démarches inutiles.</span></div></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Appel à l'action ===== -->
+    <section class="container">
+      <div class="cta reveal">
+        <h2>Prêt à prendre la route ?</h2>
+        <p>Créez votre compte client en quelques instants et réservez votre prochain véhicule.</p>
+        <div class="btns">
+          <a class="btn btn-white" href="client.html#auth-section">Espace client →</a>
+          <a class="btn btn-ghost" href="admin/login.html">Espace administrateur</a>
+        </div>
+      </div>
+    </section>
+
   </main>
 
-  <footer><span class="brand-mark small-mark">A</span><span>Atlas Auto</span><span class="footer-note">Roulez à votre rythme.</span></footer>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <footer>
+    <div class="container foot">
+      <div>
+        <a class="brand" href="#accueil"><span class="brand-mark">🚗</span><span>PARC AUTO</span></a>
+        <p>Location de voitures simple, claire et suivie de A à Z.</p>
+      </div>
+      <div>
+        <h4>Navigation</h4>
+        <ul>
+          <li><a href="#accueil">Accueil</a></li>
+          <li><a href="#flotte">Notre flotte</a></li>
+          <li><a href="#services">Nos services</a></li>
+          <li><a href="#apropos">À propos</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Connexion</h4>
+        <ul>
+          <li><a href="client.html#auth-section">Espace client</a></li>
+          <li><a href="admin/login.html">Espace administrateur</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container foot-note">© PARC AUTO · Location de voitures</div>
+  </footer>
+
+  <script>
+    // Barre : ombre au défilement
+    const topbar = document.getElementById('topbar');
+    const surDefilement = () => topbar.classList.toggle('scrolled', window.scrollY > 8);
+    window.addEventListener('scroll', surDefilement, { passive: true });
+    surDefilement();
+
+    // Menus
+    const nav = document.getElementById('nav');
+    const navToggle = document.getElementById('nav-toggle');
+    const menu = document.getElementById('connexion-menu');
+    const menuBtn = document.getElementById('connexion-btn');
+    const fermerMenu = () => { menu.classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); };
+    const fermerNav = () => { nav.classList.remove('open'); navToggle.setAttribute('aria-expanded', 'false'); };
+
+    navToggle.addEventListener('click', () => {
+      navToggle.setAttribute('aria-expanded', String(nav.classList.toggle('open')));
+    });
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menuBtn.setAttribute('aria-expanded', String(menu.classList.toggle('open')));
+    });
+    document.addEventListener('click', (e) => { if (!menu.contains(e.target)) fermerMenu(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { fermerMenu(); fermerNav(); } });
+    nav.querySelectorAll('a.nav-link').forEach((a) => a.addEventListener('click', () => { fermerMenu(); fermerNav(); }));
+
+    // Photos : si le fichier existe on l'affiche, sinon l'illustration reste
+    document.querySelectorAll('img[data-ph]').forEach((img) => {
+      const hote = img.closest('[data-photo]');
+      const ok = () => hote && hote.classList.add('has-photo');
+      const ko = () => img.remove();
+      if (img.complete) { img.naturalWidth ? ok() : ko(); }
+      else { img.addEventListener('load', ok); img.addEventListener('error', ko); }
+    });
+
+    // Apparition progressive au défilement
+    const elements = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      const obs = new IntersectionObserver((entrees) => {
+        entrees.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+      }, { threshold: 0.12 });
+      elements.forEach((el) => obs.observe(el));
+    } else {
+      elements.forEach((el) => el.classList.add('visible'));
+    }
+  </script>
 </body>
 </html>

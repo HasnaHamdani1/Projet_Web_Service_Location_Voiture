@@ -10,6 +10,7 @@ config = {
     "vehicle": os.getenv("VEHICLE_API_URL", "http://localhost:8001").rstrip("/"),
     "reservation": os.getenv("RESERVATION_API_URL", "http://localhost:8002").rstrip("/"),
     "contract": os.getenv("CONTRACT_API_URL", "http://localhost:8003").rstrip("/"),
+    "retour": os.getenv("RETOUR_URL", "http://localhost:5173").rstrip("/"),
 }
 (ROOT / "config.js").write_text(
     "window.APP_CONFIG = " + json.dumps(config) + ";\n", encoding="utf-8"

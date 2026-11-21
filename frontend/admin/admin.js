@@ -1,5 +1,6 @@
 
-const API_VEHICULES = "http://127.0.0.1:8005/vehicules";
+const API_VEHICULES = "http://100.106.223.93:8005/vehicules";
+const API_BASE = new URL(API_VEHICULES).origin;
 
 const STATUTS = [
     "DISPONIBLE",
@@ -10,11 +11,16 @@ const STATUTS = [
 
 let vehiculeEnCours = null;
 let vehicules = [];
+let urlApercuTemporaire = null;
 
 const formulaire = document.getElementById("vehicle-form");
 const modal = document.getElementById("vehicle-modal");
 const corpsTableau = document.getElementById("vehicle-table-body");
 const boutonEnregistrer = document.getElementById("save-vehicle-btn");
+
+const champImage = document.getElementById("image");
+const conteneurApercu = document.getElementById("image-preview-container");
+const imageApercu = document.getElementById("image-preview");
 
 
 // Échapper les caractères spéciaux avant insertion HTML
@@ -29,7 +35,7 @@ function echapperHTML(valeur) {
 }
 
 
-// Communication avec l'API, sans authentification
+// Communication avec l'API
 async function requeteAPI(url, methode = "GET", donnees = null) {
     const options = {
         method: methode,
@@ -64,6 +70,37 @@ async function requeteAPI(url, methode = "GET", donnees = null) {
 }
 
 
+// Envoyer la photo au service véhicule
+async function envoyerPhotoVehicule(id, fichier) {
+    const formulaireImage = new FormData();
+
+    formulaireImage.append("image", fichier);
+
+    const response = await fetch(
+        `${API_VEHICULES}/${id}/image`,
+        {
+            method: "POST",
+            body: formulaireImage
+        }
+    );
+
+    if (!response.ok) {
+        let message = "Impossible d'envoyer la photo.";
+
+        try {
+            const resultat = await response.json();
+            message = resultat.detail || message;
+        } catch {
+            // Réponse non JSON
+        }
+
+        throw new Error(message);
+    }
+
+    return response.json();
+}
+
+
 // Afficher une notification
 function afficherNotification(message) {
     const toast = document.getElementById("toast");
@@ -87,11 +124,88 @@ function effacerErreur() {
 }
 
 
+// Gérer l'aperçu de la photo
+function afficherApercuPhoto(url) {
+    if (!conteneurApercu || !imageApercu) {
+        return;
+    }
+
+    imageApercu.src = url;
+    conteneurApercu.hidden = false;
+}
+
+
+function effacerApercuPhoto() {
+    if (urlApercuTemporaire) {
+        URL.revokeObjectURL(urlApercuTemporaire);
+        urlApercuTemporaire = null;
+    }
+
+    if (imageApercu) {
+        imageApercu.src = "";
+    }
+
+    if (conteneurApercu) {
+        conteneurApercu.hidden = true;
+    }
+
+    if (champImage) {
+        champImage.value = "";
+    }
+}
+
+
+// Vérifier et afficher la photo sélectionnée
+if (champImage) {
+    champImage.addEventListener("change", () => {
+        const fichier = champImage.files[0];
+
+        if (!fichier) {
+            return;
+        }
+
+        const typesAutorises = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!typesAutorises.includes(fichier.type)) {
+            afficherNotification(
+                "Format non autorisé. Utilisez JPG, PNG ou WEBP."
+            );
+
+            champImage.value = "";
+            return;
+        }
+
+        if (fichier.size > 5 * 1024 * 1024) {
+            afficherNotification(
+                "La taille maximale de la photo est de 5 Mo."
+            );
+
+            champImage.value = "";
+            return;
+        }
+
+        if (urlApercuTemporaire) {
+            URL.revokeObjectURL(urlApercuTemporaire);
+        }
+
+        urlApercuTemporaire = URL.createObjectURL(fichier);
+
+        afficherApercuPhoto(urlApercuTemporaire);
+    });
+}
+
+
 // Ouvrir le formulaire pour ajouter
 function ouvrirFormulaireAjout() {
     vehiculeEnCours = null;
 
     formulaire.reset();
+    effacerApercuPhoto();
+    effacerErreur();
 
     document.getElementById("modal-title").textContent =
         "Ajouter un véhicule";
@@ -115,6 +229,9 @@ async function ouvrirFormulaireModification(id) {
 
         vehiculeEnCours = id;
 
+        formulaire.reset();
+        effacerApercuPhoto();
+
         document.getElementById("immatriculation").value =
             vehicule.immatriculation;
 
@@ -124,18 +241,27 @@ async function ouvrirFormulaireModification(id) {
         document.getElementById("modele").value =
             vehicule.modele;
 
-        
-
         document.getElementById("prix_par_jour").value =
             vehicule.prix_par_jour;
 
         document.getElementById("statut").value =
             vehicule.statut;
 
+        // Afficher l'ancienne photo si elle existe
+        if (vehicule.image_url) {
+            const urlPhoto = new URL(
+                vehicule.image_url,
+                API_BASE
+            ).href;
+
+            afficherApercuPhoto(urlPhoto);
+        }
+
         document.getElementById("modal-title").textContent =
             "Modifier un véhicule";
 
-        boutonEnregistrer.textContent = "Enregistrer les modifications";
+        boutonEnregistrer.textContent =
+            "Enregistrer les modifications";
 
         modal.hidden = false;
 
@@ -149,7 +275,11 @@ async function ouvrirFormulaireModification(id) {
 function fermerModal() {
     modal.hidden = true;
     formulaire.reset();
+
+    effacerApercuPhoto();
+
     vehiculeEnCours = null;
+
     boutonEnregistrer.textContent = "Enregistrer";
 }
 
@@ -158,8 +288,9 @@ function fermerModal() {
 async function enregistrerVehicule(event) {
     event.preventDefault();
 
- 
-    const prix = Number(document.getElementById("prix_par_jour").value);
+    const prix = Number(
+        document.getElementById("prix_par_jour").value
+    );
 
     const donnees = {
         immatriculation: document.getElementById("immatriculation").value.trim(),
@@ -168,6 +299,10 @@ async function enregistrerVehicule(event) {
         prix_par_jour: prix,
         statut: document.getElementById("statut").value
     };
+
+    const fichierImage = champImage
+        ? champImage.files[0]
+        : null;
 
     if (
         !donnees.immatriculation ||
@@ -178,11 +313,27 @@ async function enregistrerVehicule(event) {
         return;
     }
 
-   
-
     if (!Number.isFinite(prix) || prix <= 0) {
         afficherNotification("Le prix doit être supérieur à zéro.");
         return;
+    }
+
+    if (fichierImage) {
+        const typesAutorises = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!typesAutorises.includes(fichierImage.type)) {
+            afficherNotification("Format de photo non autorisé.");
+            return;
+        }
+
+        if (fichierImage.size > 5 * 1024 * 1024) {
+            afficherNotification("La photo ne doit pas dépasser 5 Mo.");
+            return;
+        }
     }
 
     const idAModifier = vehiculeEnCours;
@@ -191,34 +342,57 @@ async function enregistrerVehicule(event) {
     boutonEnregistrer.textContent = "Enregistrement...";
 
     try {
+        let vehiculeEnregistre;
+
         if (idAModifier !== null) {
-            await requeteAPI(
+
+            // Modifier les informations du véhicule
+            vehiculeEnregistre = await requeteAPI(
                 `${API_VEHICULES}/${idAModifier}`,
                 "PUT",
                 donnees
             );
 
-            afficherNotification("Véhicule modifié avec succès.");
         } else {
-            await requeteAPI(
+
+            // Ajouter un nouveau véhicule
+            vehiculeEnregistre = await requeteAPI(
                 API_VEHICULES,
                 "POST",
                 donnees
             );
-
-            afficherNotification("Véhicule ajouté avec succès.");
         }
 
+        // Envoyer la photo si une nouvelle photo est sélectionnée
+        if (fichierImage) {
+            await envoyerPhotoVehicule(
+                vehiculeEnregistre.id,
+                fichierImage
+            );
+        }
+
+        afficherNotification(
+            idAModifier !== null
+                ? "Véhicule modifié avec succès."
+                : "Véhicule ajouté avec succès."
+        );
+
         fermerModal();
+
         await chargerVehicules();
 
     } catch (erreur) {
         afficherNotification(erreur.message);
 
+        // Actualiser la liste même si l'envoi de la photo échoue :
+        // le véhicule peut déjà avoir été enregistré.
+        await chargerVehicules();
+
     } finally {
         boutonEnregistrer.disabled = false;
+
         boutonEnregistrer.textContent =
-            vehiculeEnCours !== null
+            idAModifier !== null
                 ? "Enregistrer les modifications"
                 : "Enregistrer";
     }
@@ -268,17 +442,35 @@ function afficherVehicules(liste) {
             ? vehicule.statut
             : "DISPONIBLE";
 
+        // Construire l'adresse complète de la photo
+        const urlPhoto = vehicule.image_url
+            ? new URL(vehicule.image_url, API_BASE).href
+            : null;
+
+        const affichagePhoto = urlPhoto
+            ? `
+                <img
+                    src="${echapperHTML(urlPhoto)}"
+                    alt="Photo de ${echapperHTML(vehicule.marque)} ${echapperHTML(vehicule.modele)}"
+                    style="width: 65px; height: 45px; object-fit: cover; border-radius: 6px; margin-right: 8px; vertical-align: middle;"
+                >
+            `
+            : `
+                <span style="color: #999; font-size: 12px;">
+                    Aucune photo
+                </span>
+            `;
+
         ligne.innerHTML = `
             <td>${echapperHTML(vehicule.id)}</td>
 
             <td>
+                ${affichagePhoto}
                 <strong>
                     ${echapperHTML(vehicule.marque)}
                     ${echapperHTML(vehicule.modele)}
                 </strong>
             </td>
-
-            
 
             <td>${echapperHTML(vehicule.immatriculation)}</td>
 
@@ -312,19 +504,31 @@ function afficherVehicules(liste) {
 }
 
 
-// Mettre à jour les statistiques
+// Mettre à jour les statistiques si les éléments existent
 function mettreAJourStatistiques(liste) {
-    document.getElementById("total-vehicles").textContent =
-        liste.length;
+    const total = document.getElementById("total-vehicles");
+    const disponibles = document.getElementById("available-vehicles");
+    const loues = document.getElementById("rented-vehicles");
+    const maintenance = document.getElementById("maintenance-vehicles");
 
-    document.getElementById("available-vehicles").textContent =
-        liste.filter(v => v.statut === "DISPONIBLE").length;
+    if (total) {
+        total.textContent = liste.length;
+    }
 
-    document.getElementById("rented-vehicles").textContent =
-        liste.filter(v => v.statut === "LOUE").length;
+    if (disponibles) {
+        disponibles.textContent =
+            liste.filter(v => v.statut === "DISPONIBLE").length;
+    }
 
-    document.getElementById("maintenance-vehicles").textContent =
-        liste.filter(v => v.statut === "MAINTENANCE").length;
+    if (loues) {
+        loues.textContent =
+            liste.filter(v => v.statut === "LOUE").length;
+    }
+
+    if (maintenance) {
+        maintenance.textContent =
+            liste.filter(v => v.statut === "MAINTENANCE").length;
+    }
 }
 
 
@@ -336,7 +540,8 @@ async function chargerVehicules() {
     try {
         effacerErreur();
 
-        messageChargement.textContent = "Chargement des véhicules...";
+        messageChargement.textContent =
+            "Chargement des véhicules...";
 
         vehicules = await requeteAPI(API_VEHICULES);
 
@@ -397,4 +602,6 @@ modal.addEventListener("click", event => {
 
 // Chargement initial du dashboard
 chargerVehicules();
+
+        
 
