@@ -6,8 +6,6 @@
   <meta name="theme-color" content="#102a43">
   <title>Atlas Auto | Location de voitures</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="Contrat/contrats.css">
-  <script src="config.example.js"></script>
   <script src="config.js"></script>
   <script defer src="app.js"></script>
 </head>
@@ -68,17 +66,6 @@
     </section>
 
     <section id="app-section" hidden>
-      <aside id="admin-sidebar" class="admin-sidebar" hidden>
-        <div class="sidebar-brand"><span class="sidebar-mark">▣</span><div><strong>PARC AUTO</strong><small><i></i> Connecté</small></div></div>
-        <nav aria-label="Navigation principale">
-          <a class="sidebar-link" href="#vehicules" aria-label="Véhicules" title="Véhicules" aria-disabled="true">♧ <span>Véhicules</span></a>
-          <a class="sidebar-link" href="#admin-reservations" aria-label="Réservations" title="Réservations" aria-disabled="true">▦ <span>Réservations</span></a>
-          <a class="sidebar-link active" href="#contracts" aria-label="Contrats" title="Contrats">▤ <span>Contrats</span></a>
-          <a class="sidebar-link disabled" aria-label="Retours" title="Retours" aria-disabled="true">↶ <span>Retours</span></a>
-          <a class="sidebar-link disabled" aria-label="Paramètres" title="Paramètres" aria-disabled="true">⚙ <span>Paramètres</span></a>
-        </nav>
-      </aside>
-      <div id="workspace-main">
       <div class="welcome-row">
         <div><p class="eyebrow">Bienvenue</p><h2 id="welcome-title">Votre espace</h2></div>
         <span id="role-badge" class="role-badge"></span>
@@ -101,10 +88,9 @@
       </section>
 
       <section id="contracts" class="content-section">
-        <div class="section-heading"><div><h2>Gestion des contrats de location</h2></div><div class="contract-heading-actions"><button id="refresh-contracts" class="button button-outline">Actualiser</button><button id="new-contract-button" class="button button-primary" type="button">＋ Nouveau contrat</button></div></div>
+        <div class="section-heading"><div><p class="eyebrow">Documents</p><h2>Contrats de location</h2></div><button id="refresh-contracts" class="button button-outline">Actualiser</button></div>
         <div id="contract-list" class="contract-grid"><div class="empty-state">Connectez-vous pour consulter vos contrats.</div></div>
       </section>
-      </div>
     </section>
   </main>
 

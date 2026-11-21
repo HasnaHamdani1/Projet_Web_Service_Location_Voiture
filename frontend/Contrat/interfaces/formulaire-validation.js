@@ -14,8 +14,6 @@ export async function ouvrirFormulaireValidation(
   contrat,
   reservation,
   vehicule,
-  client,
-  administrateur,
   finaliserContrat,
   retourListe,
 ) {
@@ -24,9 +22,8 @@ export async function ouvrirFormulaireValidation(
   boite.setAttribute("aria-label", "Validation et signatures du contrat");
   await chargerFragment(boite, "formulaire-validation.html");
 
-  afficher(boite, "client-nom", client?.nom || `Client #${Number(reservation?.client_id || 0)}`);
-  afficher(boite, "client-email", client?.email || "—");
-  afficher(boite, "client-telephone", client?.telephone || "—");
+  const clientId = reservation?.client_id;
+  afficher(boite, "client-reference", clientId ? `#${clientId}` : "—");
   afficher(boite, "vehicule", `${vehicule?.marque || "Véhicule"} ${vehicule?.modele || ""}`.trim());
   afficher(boite, "immatriculation", vehicule?.immatriculation || `Véhicule #${reservation?.vehicule_id ?? "—"}`);
   afficher(boite, "debut", dateFr(contrat.periode_prise));

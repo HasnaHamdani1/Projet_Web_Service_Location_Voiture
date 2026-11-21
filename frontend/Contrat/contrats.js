@@ -4,66 +4,34 @@ import { ouvrirFormulaireIdentification } from "./interfaces/formulaire-identifi
 import { ouvrirFormulaireDetails } from "./interfaces/formulaire-details.js";
 import { ouvrirFormulaireValidation } from "./interfaces/formulaire-validation.js";
 
-/** Contrôleur de l'espace Contrats, intégré à l'application frontend partagée. */
-export function creerGestionContrats({ request, notify, escapeHtml, state }) {
+/** Contrôleur de la liste et du formulaire de création. */
+export function creerGestionContrats({ request, notify, obtenirVehicules }) {
   const api = creerApiContrats(request);
 
   async function chargerListe() {
     const list = document.querySelector("#contract-list");
     try {
-      const contrats = await api.lister();
-      await afficherListeContrats(list, contrats, state.vehicles);
+      const [contrats, vehicules] = await Promise.all([api.lister(), obtenirVehicules()]);
+      await afficherListeContrats(list, contrats, vehicules);
     } catch (error) {
-      list.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
-    }
-  }
-
-  async function creerDepuisReservation(reservationId) {
-    try {
-      await api.creer(reservationId);
-      notify("Contrat créé en attente. Enregistrez la caution avant la signature.");
-      await chargerListe();
-    } catch (error) {
-      notify(error.message, true);
-    }
-  }
-
-  async function enregistrerCaution(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const montant = Number(new FormData(form).get("montant_caution"));
-    try {
-      await api.enregistrerCaution(form.dataset.deposit, montant);
-      notify("Caution enregistrée.");
-      await chargerListe();
-    } catch (error) {
-      notify(error.message, true);
-    }
-  }
-
-  async function validerContrat(event) {
-    const button = event.currentTarget;
-    button.disabled = true;
-    try {
-      await api.valider(button.dataset.sign);
-      notify("Contrat signé et validé.");
-      await chargerListe();
-    } catch (error) {
-      notify(error.message, true);
-      button.disabled = false;
+      const message = document.createElement("div");
+      message.className = "empty-state";
+      message.textContent = error.message;
+      list.replaceChildren(message);
     }
   }
 
   async function ouvrirNouveauContrat(options = {}) {
     try {
-      const [reservations, contrats] = await Promise.all([
+      const [reservations, contrats, vehicules] = await Promise.all([
         request("reservation", "/reservations"),
         api.lister(),
+        obtenirVehicules(),
       ]);
       await ouvrirFormulaireIdentification(
         reservations,
         contrats,
-        state.vehicles,
+        vehicules,
         (brouillon, reservation, vehicule) => ouvrirFormulaireDetails(
           brouillon,
           reservation,
@@ -73,25 +41,15 @@ export function creerGestionContrats({ request, notify, escapeHtml, state }) {
             reservationId: Number(reservation.id),
             contrat: brouillon,
           }),
-          async contratMisAJour => {
-            let client = null;
-            try {
-              client = await request("auth", `/auth/clients/${Number(reservation.client_id)}`);
-            } catch (error) {
-              notify(`Nom du client indisponible : ${error.message}`, true);
-            }
-            await ouvrirFormulaireValidation(
-              contratMisAJour,
-              reservation,
-              vehicule,
-              client,
-              state.user,
-              contrat => api.finaliser(contrat),
-              chargerListe,
-            );
-          },
+          contratMisAJour => ouvrirFormulaireValidation(
+            contratMisAJour,
+            reservation,
+            vehicule,
+            contrat => api.finaliser(contrat),
+            chargerListe,
+          ).catch(error => notify(error.message, true)),
           chargerListe,
-        ),
+        ).catch(error => notify(error.message, true)),
         options.reservationId,
         options.contrat,
       );
@@ -100,5 +58,5 @@ export function creerGestionContrats({ request, notify, escapeHtml, state }) {
     }
   }
 
-  return { chargerListe, creerDepuisReservation, ouvrirNouveauContrat };
+  return { chargerListe, ouvrirNouveauContrat };
 }

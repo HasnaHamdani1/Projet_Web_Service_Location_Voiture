@@ -15,23 +15,14 @@ Les règles métier qui créent, valident ou clôturent un contrat restent dans 
 `service_contrat`. Le modèle de liste du frontend sert uniquement à préparer les données
 pour l'affichage ; il ne remplace pas ces règles métier.
 
-## Intégration dans le frontend partagé
+## Ouvrir l'espace Contrats
 
-Le projet utilise une application frontend commune. Le fichier racine `frontend/app.js`
-initialise le contrôleur Contrat et lui transmet les fonctions communes de requête,
-notification et l'état de session. `frontend/index.html` fournit le conteneur
-`#contract-list`, les boutons de la page et charge `Contrat/contrats.css`.
+Le serveur frontend Docker expose la page sur `http://localhost:3000/Contrat/`.
+Avec Live Server, ouvrir directement `frontend/Contrat/index.html`.
+La page charge les contrats sans connexion. Les fichiers HTML d'`interfaces/`
+sont des fragments chargés depuis cette page.
 
-Pour ouvrir rapidement l'espace Contrat avec Live Server, lancer
-`frontend/Contrat/index.html`. Ce point d'entrée redirige vers l'application partagée
-et, après connexion administrateur, place l'écran sur la liste des contrats. Les écrans
-HTML dans `interfaces/` restent des fragments chargés par `charger-fragment.js` ; ils
-ne sont pas destinés à être ouverts individuellement.
-
-Avec Live Server, `frontend/config.example.js` fournit les adresses locales par défaut.
-Elles supposent que les API tournent sur le même ordinateur. Si les API tournent sur une
-autre machine, il faut remplacer `localhost` par son adresse joignable.
-
-Pour intégrer ce module dans une autre copie du frontend, conserver ces points
-d'intégration dans les fichiers racine. Il n'est pas nécessaire de déplacer les
-fichiers Auth, Véhicule ou Réservation dans ce dossier.
+Les API Véhicule, Réservation et Contrat utilisent le même nom d'hôte que la page,
+aux ports 8001, 8002 et 8003. Pour Live Server, ajouter l'origine exacte de Live
+Server (par exemple `http://127.0.0.1:5500`) à `CORS_ORIGINS` dans le fichier
+`.env` local, puis recréer les conteneurs des trois API.

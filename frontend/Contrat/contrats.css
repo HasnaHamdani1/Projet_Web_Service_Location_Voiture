@@ -1,35 +1,4 @@
 /* Styles propres à l'espace Contrats F005. */
-body.admin-contract-mode .hero,
-body.admin-contract-mode > footer,
-body.admin-contract-mode #app-section .welcome-row {
-  display: none;
-}
-
-body.admin-contract-mode .topbar {
-  height: 0;
-  padding: 0;
-  overflow: visible;
-  border: 0;
-  background: transparent;
-}
-
-body.admin-contract-mode .topbar .brand,
-body.admin-contract-mode .topbar .connection {
-  display: none;
-}
-
-body.admin-contract-mode .topbar-actions {
-  position: fixed;
-  z-index: 20;
-  top: 8px;
-  right: 14px;
-}
-
-body.admin-contract-mode #logout-button {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(16, 42, 67, .08);
-}
-
 main:has(#app-section.admin-view) {
   max-width: none;
   margin: 0;
