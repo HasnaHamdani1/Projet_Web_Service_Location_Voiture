@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Identification du contrat · Parc Auto</title>
+  <link rel="stylesheet" href="contrats.css">
+  <script type="module" src="formulaire-identification.js"></script>
+</head>
+<body>
+<aside class="rail">
+  <a class="brand" href="index.html" aria-label="Parc Auto, liste des contrats"><span class="brand-mark" aria-hidden="true">P</span><span class="rail-label">PARC AUTO</span></a>
+  <nav aria-label="Module Contrat"><a href="index.html" aria-current="page">▤ <span class="rail-label">Contrats</span></a></nav>
+</aside>
+<main class="page">
+  <header class="heading">
+    <h1>Formulaire d’identification du contrat</h1><span class="step">Étape 1 sur 3 · Réservation</span>
+  </header>
+  <form id="identification" class="panel">
+    <section class="section">
+      <h2>Identifiants clés</h2>
+      <div class="grid two">
+        <label>Numéro de réservation
+          <select id="reservation" required disabled><option value="">Chargement des réservations…</option></select>
+        </label>
+        <label>Numéro de contrat <input id="numero" readonly placeholder="Généré automatiquement"></label>
+      </div>
+      <p id="message" class="notice" role="status" hidden></p>
+    </section>
+    <section class="section">
+      <h2>Résumé de la réservation</h2>
+      <div class="grid four">
+        <label>Client <input id="client" readonly></label>
+        <label>Immatriculation <input id="immatriculation" readonly></label>
+        <label>Date de début <input id="debut" readonly></label>
+        <label>Date de fin <input id="fin" readonly></label>
+      </div>
+      <div class="summary" id="vehicule-resume" hidden>
+        <strong id="vehicule"></strong><span class="badge confirmed">Réservation confirmée</span>
+      </div>
+    </section>
+    <footer class="actions"><a class="button" href="index.html">← Liste des contrats</a><button id="suivant" class="button primary" disabled>Suivant →</button></footer>
+  </form>
+</main>
+</body>
+</html>

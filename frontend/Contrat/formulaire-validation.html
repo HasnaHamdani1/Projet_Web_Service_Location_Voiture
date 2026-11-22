@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Validation et signatures · Parc Auto</title>
+  <link rel="stylesheet" href="contrats.css">
+  <script type="module" src="formulaire-validation.js"></script>
+</head>
+<body>
+<aside class="rail">
+  <a class="brand" href="index.html" aria-label="Parc Auto, liste des contrats"><span class="brand-mark" aria-hidden="true">P</span><span class="rail-label">PARC AUTO</span></a>
+  <nav aria-label="Module Contrat"><a href="index.html" aria-current="page">▤ <span class="rail-label">Contrats</span></a></nav>
+</aside>
+<main class="page">
+  <header class="heading">
+    <h1>Validation et signatures du contrat</h1><span class="step">Étape 3 sur 3 · Validation</span>
+  </header>
+  <form id="validation" class="panel">
+    <section class="section">
+      <h2>Récapitulatif du contrat</h2>
+      <dl id="recapitulatif" class="grid three"></dl>
+    </section>
+    <section class="section grid two validation">
+      <div>
+        <h2>Statut du contrat</h2>
+        <label>Statut après enregistrement <input value="Validé" readonly></label>
+        <p class="status-line">Statut actuel <span class="badge pending">En attente</span></p>
+      </div>
+      <div>
+        <h2>Impression et signatures manuscrites</h2>
+        <div class="summary"><button id="imprimer" type="button" class="button">Imprimer le contrat</button></div>
+        <label class="checkbox"><input id="signatures" type="checkbox" required> Je confirme que le contrat a été imprimé et signé par le client et le représentant de l’agence.</label>
+        <p class="status-line">Date d’édition <time id="date-edition"></time></p>
+        <p id="message" class="notice error" role="alert" hidden></p>
+      </div>
+    </section>
+    <footer class="actions"><a class="button" href="formulaire-details.html">← Retour</a><button id="terminer" class="button primary" disabled>✓ Terminer</button></footer>
+  </form>
+  <article class="document-impression" id="document-impression">
+    <header class="heading">
+      <span id="impression-numero"></span><time id="impression-date"></time>
+    </header>
+    <h1>Contrat de location de véhicule</h1>
+    <dl class="grid two" id="donnees-impression"></dl>
+    <h2>Signatures</h2>
+    <div class="grid two">
+      <section class="signature"><strong>Signature du client</strong><p>Date __________________</p></section>
+      <section class="signature"><strong>Signature du représentant de l’agence</strong><p>Date __________________</p></section>
+    </div>
+  </article>
+</main>
+</body>
+</html>

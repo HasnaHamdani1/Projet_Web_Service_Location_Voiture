@@ -3,42 +3,51 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Parc Auto | Gestion des contrats</title>
-  <link rel="stylesheet" href="../styles.css">
-  <link rel="stylesheet" href="./contrats.css">
-  <script type="module" src="./page-contrats.js"></script>
+  <title>Gestion des contrats · Parc Auto</title>
+  <link rel="stylesheet" href="contrats.css">
+  <script type="module" src="liste-contrats.js"></script>
 </head>
 <body>
-  <main>
-    <div id="app-section" class="admin-view">
-      <aside class="admin-sidebar">
-        <div class="sidebar-brand">
-          <span class="sidebar-mark" aria-hidden="true">▣</span>
-          <div><strong>PARC AUTO</strong><small><i></i> Accès public</small></div>
-        </div>
-        <nav aria-label="Navigation principale">
-          <a class="sidebar-link" href="../index.html#vehicules">♧ <span>Véhicules</span></a>
-          <a class="sidebar-link" href="../index.html#admin-reservations">▦ <span>Réservations</span></a>
-          <a class="sidebar-link active" href="#contracts" aria-current="page">▤ <span>Contrats</span></a>
-          <span class="sidebar-link disabled" aria-disabled="true">↶ <span>Retours</span></span>
-          <span class="sidebar-link disabled" aria-disabled="true">⚙ <span>Paramètres</span></span>
-        </nav>
-      </aside>
-      <div id="workspace-main">
-        <section id="contracts" class="content-section">
-          <div class="section-heading">
-            <h2>Gestion des contrats de location</h2>
-            <div class="contract-heading-actions">
-              <button id="new-contract-button" class="button button-primary" type="button">＋ Nouveau contrat</button>
-            </div>
-          </div>
-          <div id="contract-list" class="contract-grid">
-            <div class="empty-state" role="status">Chargement des contrats…</div>
-          </div>
-        </section>
-      </div>
+<aside class="rail">
+  <a class="brand" href="index.html" aria-label="Parc Auto, liste des contrats"><span class="brand-mark" aria-hidden="true">P</span><span class="rail-label">PARC AUTO</span></a>
+  <nav aria-label="Module Contrat"><a href="index.html" aria-current="page">▤ <span class="rail-label">Contrats</span></a></nav>
+</aside>
+<main class="page">
+  <header class="heading">
+    <h1>Gestion des contrats de location</h1>
+    <a class="button primary" href="formulaire-identification.html?nouveau=1">＋ Nouveau contrat</a>
+  </header>
+  <div class="filters panel">
+    <label class="search"><span aria-hidden="true">⌕</span><input id="recherche" type="search" aria-label="Rechercher un contrat" placeholder="Rechercher par N° de contrat, client, immatriculation…"></label>
+    <select id="statut" aria-label="Filtrer par statut">
+      <option value="">Tous les statuts</option><option value="EN_ATTENTE">En attente</option>
+      <option value="VALIDE">Validé</option><option value="CLOTURE">Clôturé</option>
+    </select>
+  </div>
+  <section class="stats" aria-label="Indicateurs des contrats">
+    <article class="panel stat"><div class="stat-top"><span class="icon" aria-hidden="true">▤</span><span class="mois"></span></div><h2>Total contrats ce mois</h2><strong id="total-mois">—</strong></article>
+    <article class="panel stat waiting"><div class="stat-top"><span class="icon" aria-hidden="true">◷</span><span class="mois"></span></div><h2>Contrats en attente</h2><strong id="total-attente">—</strong></article>
+    <article class="panel stat approved"><div class="stat-top"><span class="icon" aria-hidden="true">✓</span><span class="mois"></span></div><h2>Contrats validés</h2><strong id="total-valides">—</strong></article>
+  </section>
+  <p id="confirmation" class="notice success" role="status" hidden></p>
+  <p id="message" class="notice" role="status">Chargement des contrats…</p>
+  <section class="panel table-panel" aria-label="Liste des contrats">
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th scope="col">N° contrat</th><th scope="col">Client</th><th scope="col">Immatriculation &amp; véhicule</th><th scope="col">Période (début — fin)</th><th scope="col">Montant total</th><th scope="col">Statut</th><th scope="col">Actions</th></tr></thead>
+        <tbody id="lignes"></tbody>
+      </table>
     </div>
-  </main>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <footer class="pagination">
+      <span id="compteur" aria-live="polite"></span>
+      <nav id="pagination" aria-label="Pages des contrats"></nav>
+    </footer>
+  </section>
+  <dialog id="detail" aria-labelledby="titre-detail">
+    <form method="dialog" class="heading"><h2 id="titre-detail">Détail du contrat</h2><button class="button" aria-label="Fermer">×</button></form>
+    <p class="notice" id="message-detail" role="status" hidden></p>
+    <dl id="donnees-detail" class="grid two"></dl>
+  </dialog>
+</main>
 </body>
 </html>

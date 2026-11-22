@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Détails et caution · Parc Auto</title>
+  <link rel="stylesheet" href="contrats.css">
+  <script type="module" src="formulaire-details.js"></script>
+</head>
+<body>
+<aside class="rail">
+  <a class="brand" href="index.html" aria-label="Parc Auto, liste des contrats"><span class="brand-mark" aria-hidden="true">P</span><span class="rail-label">PARC AUTO</span></a>
+  <nav aria-label="Module Contrat"><a href="index.html" aria-current="page">▤ <span class="rail-label">Contrats</span></a></nav>
+</aside>
+<main class="page">
+  <header class="heading">
+    <h1>Formulaire de détails du contrat</h1><span class="step">Étape 2 sur 3 · Détails et caution</span>
+  </header>
+  <form id="details" class="panel">
+    <section class="section">
+      <h2>Informations du contrat</h2>
+      <div class="grid three">
+        <label>Numéro de contrat <input id="numero" readonly></label>
+        <label>Immatriculation <input id="immatriculation" readonly></label>
+        <label>Client <input id="client" readonly></label>
+        <label>Date de prise <input id="debut" readonly></label>
+        <label>Date de fin <input id="fin" readonly></label>
+        <label>Nombre de jours <input id="jours" readonly></label>
+      </div>
+      <div class="grid two">
+        <label>Prix par jour <input id="prix" readonly></label>
+        <label>Montant total <input class="total" id="total" readonly></label>
+      </div>
+    </section>
+    <section class="section">
+      <h2>Caution</h2>
+      <div class="grid three">
+        <label>Montant de la caution <input id="caution" type="number" min="0.01" max="99999999.99" step="0.01" required></label>
+        <label>Mode d’encaissement
+          <select id="mode" required>
+            <option value="">Choisir un mode</option><option value="CARTE">Carte bancaire</option>
+            <option value="ESPECES">Espèces</option><option value="CHEQUE">Chèque</option><option value="VIREMENT">Virement</option>
+          </select>
+        </label>
+        <label>Statut de la caution
+          <select id="statut-caution" required>
+            <option value="">Choisir un statut</option><option value="RECUE">Reçue</option><option value="A_RECEVOIR">En attente</option>
+          </select>
+        </label>
+      </div>
+      <label>Conditions particulières <textarea id="conditions" rows="3" maxlength="1000"></textarea></label>
+    </section>
+    <footer class="actions"><a class="button" href="formulaire-identification.html">← Retour</a><button class="button primary">Suivant →</button></footer>
+  </form>
+</main>
+</body>
+</html>
