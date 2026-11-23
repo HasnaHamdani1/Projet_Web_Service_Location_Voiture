@@ -4,7 +4,7 @@ import { CalendarCheck, Car, ChevronDown, LayoutDashboard, LogOut, Menu, User, X
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { initials } from '../utils/format'
+import { adminDashboardUrl, initials } from '../utils/format'
 
 export function Logo({ to = '/' }) {
   return (
@@ -140,7 +140,7 @@ export default function SiteLayout() {
             <ul className="mt-3 space-y-2 text-ink-muted">
               <li><Link to="/inscription" className="hover:text-ink">Créer un compte</Link></li>
               <li><Link to="/connexion" className="hover:text-ink">Connexion</Link></li>
-              <li><Link to="/admin/connexion" className="inline-flex items-center gap-1.5 hover:text-ink"><User className="h-3.5 w-3.5" aria-hidden /> Espace agence</Link></li>
+              <li><a href={adminDashboardUrl()} className="inline-flex items-center gap-1.5 hover:text-ink"><User className="h-3.5 w-3.5" aria-hidden /> Espace agence</a></li>
             </ul>
           </div>
         </div>

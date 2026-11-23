@@ -3,7 +3,7 @@
 Responsable : Maryam OUBLAL (groupe G9). Fonctionnalités F001 → F004 du dossier de spécifications, en version « site de réservation » :
 
 - **Site client** (type Goride) : le client choisit ses dates, compare les véhicules du **service Véhicule**, réserve, paie (paiement simulé) et suit ses réservations.
-- **Espace agence** (`/admin`) : l'administrateur **consulte et gère** les réservations faites sur le site (confirmation d'un paiement au comptoir, annulation, export CSV). Il ne crée ni ne modifie de réservation.
+- **Espace agence** (`/admin`) : l'administrateur **consulte et gère** les réservations faites sur le site (confirmation d'un paiement au comptoir, annulation, export CSV). Il ne crée ni ne modifie de réservation. **Pas d'écran de connexion ici** : l'admin se connecte dans le tableau de bord du frontend commun (http://localhost:3000/admin/login.html), dont le menu « Réservations » ouvre cet espace avec son jeton (`/admin/reservations#jeton=…`, vérifié auprès de service_auth).
 - **Une seule base** : `db_location_voitures` (dump `Base_de_données/db_location_voitures.sql`), partagée par tous les services.
 
 ```text
@@ -33,7 +33,8 @@ Navigateur ─► frontend_reservation (nginx, port 3002)
 | Vérification (F003) → création `EN_ATTENTE` | `/reserver/:id` | client |
 | Paiement simulé ou à l'agence → confirmation (F004) | `/mes-reservations/:id/paiement` | client |
 | Mes réservations, détail, annulation, impression | `/mes-reservations[/:id]` | client |
-| Gestion des réservations (F001), détail (F003), clients | `/admin/reservations[/:id]`, `/admin/clients[/:id]` | administrateur |
+| Gestion des réservations (F001), détail (F003), clients | `/admin/reservations[/:id]`, `/admin/clients[/:id]` | administrateur (jeton transmis par le tableau de bord) |
+| Accès agence sans session : lien vers le tableau de bord admin | `/admin/acces` | public |
 
 ## API
 

@@ -48,6 +48,19 @@ export function AuthProvider({ children }) {
     return profile
   }, [])
 
+  /**
+   * Espace agence : l'administrateur se connecte dans le tableau de bord de Leila (service_auth),
+   * qui transmet son jeton à ce site. On vérifie le jeton auprès de service_auth (/auth/me) et le rôle.
+   */
+  const loginWithToken = useCallback(async (token) => {
+    const profile = await authService.me(token)
+    if (profile.role !== ROLE_ADMIN) throw new AccessError("Cet espace est réservé aux administrateurs de l'agence.")
+    localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(USER_KEY, JSON.stringify(profile))
+    setUser(profile)
+    return profile
+  }, [])
+
   /** Inscription d'un client (service_auth) puis connexion automatique. */
   const register = useCallback(
     async (data) => {
@@ -73,10 +86,11 @@ export function AuthProvider({ children }) {
       isClient: user?.role === ROLE_CLIENT,
       isAdmin: user?.role === ROLE_ADMIN,
       login,
+      loginWithToken,
       register,
       logout,
     }),
-    [user, login, register, logout],
+    [user, login, loginWithToken, register, logout],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

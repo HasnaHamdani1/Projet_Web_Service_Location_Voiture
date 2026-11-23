@@ -174,14 +174,16 @@ services:
       start_period: 5s
     restart: unless-stopped
 
-  # Interface d'administration des réservations (React, maquettes F001–F004) – http://localhost:3002
+  # Site de réservation client + espace agence (React, F001–F004) – http://localhost:3002
+  # L'agence y arrive depuis le menu « Réservations » du tableau de bord (jeton dans l'ancre #jeton=…)
   frontend_reservation:
     build:
       context: ./service_reservation/frontend
       args:
         VITE_MODULE_VEHICULES_URL: http://localhost:3000/admin/dashboard.html
         VITE_MODULE_CONTRATS_URL: http://localhost:3000/Contrat/index.html
-        VITE_MODULE_RETOURS_URL: http://localhost:3000/
+        VITE_MODULE_RETOURS_URL: http://localhost:5173/
+        VITE_ADMIN_DASHBOARD_URL: http://localhost:3000/admin/login.html
     environment:
       RESERVATION_API_UPSTREAM: http://service_reservation:8000
       AUTH_API_UPSTREAM: http://service_auth:8000
