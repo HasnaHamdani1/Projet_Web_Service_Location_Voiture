@@ -34,7 +34,7 @@ const ADMIN = { id: 1, nom: 'Administrateur Agence', email: 'admin@parcauto.ma',
 const OFFRE = {
   id: 1, immatriculation: 'AB-123-CD', marque: 'Peugeot', modele: '208', libelle: 'Peugeot 208', annee: 2023,
   categorie: 'Citadine', boite: 'Manuelle', carburant: 'Essence', prix_par_jour: 45, statut: 'DISPONIBLE', image_url: null,
-  reservable: true, disponible: null, duree_jours: null, prix_estime: null,
+  reservable: true, disponible: null, duree_jours: null, prix_estime: null, devise: '€',
 }
 const DEVIS = {
   duree_jours: 3, tarif_journalier: 45, tarif_assistance: 6, montant_location: 135, montant_assistance: 0,
