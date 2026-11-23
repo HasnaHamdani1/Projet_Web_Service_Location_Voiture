@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent
 
 # Adresses des API vues par le navigateur. Variable vide = même machine que la page
 # (http://<hôte de la page>:<port publié par compose.yaml>) : fonctionne en local
-# comme depuis une autre machine (Tailscale, réseau de la salle), sans IP écrite en dur.
+# comme depuis une autre machine (réseau de la salle), sans IP écrite en dur.
 PORTS = {
     "auth": ("AUTH_API_URL", 8004),
     "vehicle": ("VEHICLE_API_URL", 8005),
