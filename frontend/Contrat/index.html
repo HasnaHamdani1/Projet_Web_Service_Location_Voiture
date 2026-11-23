@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestion des contrats · Parc Auto</title>
+  <link rel="stylesheet" href="contrats.css">
+  <script src="/config.js"></script>
+  <script type="module" src="liste-contrats.js"></script>
+</head>
+<body>
+<aside class="rail">
+  <div class="rail-brand">
+    <span class="rail-brand-icon" aria-hidden="true">🚗</span>
+    <div>
+      <h2>PARC AUTO</h2>
+      <span class="rail-status" hidden>● Connecté</span>
+    </div>
+  </div>
+  <nav aria-label="Administration">
+    <ul class="rail-menu">
+      <li><a class="rail-link" href="../admin/dashboard.html"><span aria-hidden="true">▦</span> Dashboard</a></li>
+      <li><a class="rail-link" href="../admin/admin.html"><span aria-hidden="true">🚗</span> Véhicules</a></li>
+      <li><span class="rail-link" aria-disabled="true"><span aria-hidden="true">📅</span> Réservations</span></li>
+      <li class="active"><a class="rail-link" href="index.html" aria-current="location"><span aria-hidden="true">📄</span> Contrats</a></li>
+      <li><a class="rail-link" href="http://localhost:5173"><span aria-hidden="true">⬅️</span> Retours</a></li>
+      <li><span class="rail-link" aria-disabled="true"><span aria-hidden="true">⚙️</span> Paramètres</span></li>
+    </ul>
+  </nav>
+</aside>
+<main class="page">
+  <header class="heading">
+    <h1>Gestion des contrats de location</h1>
+    <a class="button primary" href="formulaire-identification.html?nouveau=1">＋ Nouveau contrat</a>
+  </header>
+  <div class="filters panel">
+    <label class="search"><span aria-hidden="true">⌕</span><input id="recherche" type="search" aria-label="Rechercher un contrat" placeholder="Rechercher par N° de contrat, client, immatriculation…"></label>
+    <select id="statut" aria-label="Filtrer par statut">
+      <option value="">Tous les statuts</option><option value="EN_ATTENTE">En attente</option>
+      <option value="VALIDE">Validé</option><option value="CLOTURE">Clôturé</option>
+    </select>
+  </div>
+  <section class="stats" aria-label="Indicateurs des contrats">
+    <article class="panel stat"><div class="stat-top"><span class="icon" aria-hidden="true">▤</span><span class="mois"></span></div><h2>Total contrats ce mois</h2><strong id="total-mois">—</strong></article>
+    <article class="panel stat waiting"><div class="stat-top"><span class="icon" aria-hidden="true">◷</span><span class="mois"></span></div><h2>Contrats en attente</h2><strong id="total-attente">—</strong></article>
+    <article class="panel stat approved"><div class="stat-top"><span class="icon" aria-hidden="true">✓</span><span class="mois"></span></div><h2>Contrats validés</h2><strong id="total-valides">—</strong></article>
+  </section>
+  <p id="confirmation" class="notice success" role="status" hidden></p>
+  <p id="message" class="notice" role="status">Chargement des contrats…</p>
+  <section class="panel table-panel" aria-label="Liste des contrats">
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th scope="col">N° contrat</th><th scope="col">Client</th><th scope="col">Immatriculation &amp; véhicule</th><th scope="col">Période (début — fin)</th><th scope="col">Montant total</th><th scope="col">Statut</th><th scope="col">Actions</th></tr></thead>
+        <tbody id="lignes"></tbody>
+      </table>
+    </div>
+    <footer class="pagination">
+      <span id="compteur" aria-live="polite"></span>
+      <nav id="pagination" aria-label="Pages des contrats"></nav>
+    </footer>
+  </section>
+  <dialog id="detail" aria-labelledby="titre-detail">
+    <form method="dialog" class="heading"><h2 id="titre-detail">Détail du contrat</h2><button class="button" aria-label="Fermer">×</button></form>
+    <p class="notice" id="message-detail" role="status" hidden></p>
+    <dl id="donnees-detail" class="grid two"></dl>
+  </dialog>
+</main>
+</body>
+</html>

@@ -11,14 +11,12 @@ services:
       - mysql_data:/var/lib/mysql
       # Base UNIQUE de l'équipe (dump de référence) : tous les services utilisent db_location_voitures
       - ./Base_de_données/db_location_voitures.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
-      # Migrations Contrat 002-005 : celles de main modifient l'ancienne table `contrat`, absente du dump
-      # (MySQL s'arrêterait à l'initialisation). La PR Contrat (branche service-contrat) les adapte à `contrats`
-      # et remet ces montages, avec 005_add_deposit_details.sql à la place de 005_create_prolongation.sql.
-      # - ./service_contrat/migrations/002_add_date_validation.sql:/docker-entrypoint-initdb.d/002_contract_date_validation.sql:ro
-      # - ./service_contrat/migrations/003_add_caution.sql:/docker-entrypoint-initdb.d/003_contract_caution.sql:ro
-      # - ./service_contrat/migrations/004_add_date_cloture.sql:/docker-entrypoint-initdb.d/004_contract_date_cloture.sql:ro
-      # - ./service_contrat/migrations/005_add_deposit_details.sql:/docker-entrypoint-initdb.d/005_contract_deposit.sql:ro
+      - ./service_contrat/migrations/002_add_date_validation.sql:/docker-entrypoint-initdb.d/002_contract_date_validation.sql:ro
+      - ./service_contrat/migrations/003_add_caution.sql:/docker-entrypoint-initdb.d/003_contract_caution.sql:ro
+      - ./service_contrat/migrations/004_add_date_cloture.sql:/docker-entrypoint-initdb.d/004_contract_date_cloture.sql:ro
+      - ./service_contrat/migrations/005_add_deposit_details.sql:/docker-entrypoint-initdb.d/005_contract_deposit.sql:ro
       - ./service_reservation/migrations/006_service_reservation.sql:/docker-entrypoint-initdb.d/006_service_reservation.sql:ro
+      - ./database/migrations/007_vehicules_image_url.sql:/docker-entrypoint-initdb.d/007_vehicules_image_url.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
       interval: 5s
@@ -108,6 +106,7 @@ services:
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_voitures}
       RESERVATION_SERVICE_URL: http://service_reservation:8000
       RESERVATION_SERVICE_TIMEOUT_SECONDS: ${RESERVATION_SERVICE_TIMEOUT_SECONDS:-5}
+      RESERVATION_API_KEY: ${CONTRAT_RESERVATION_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
     depends_on:
