@@ -1,8 +1,9 @@
 
 // Service Authentification (port publié par Docker Compose : 8014)
-const API_AUTH = window.location.hostname === "localhost"
+const API_AUTH = (window.location.hostname === "localhost" ||
+                  window.location.hostname === "127.0.0.1")
     ? "http://localhost:8014"
-    : "http://100.106.223.93:8014";
+    : "http://100.112.66.13:8014";
 
 const form = document.getElementById("login-form");
 const errorMessage = document.getElementById("error-message");

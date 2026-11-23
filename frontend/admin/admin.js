@@ -1,9 +1,11 @@
 
-const API_VEHICULES = window.location.hostname === "localhost"
+const API_VEHICULES = (window.location.hostname === "localhost" ||
+                       window.location.hostname === "127.0.0.1")
     ? "http://localhost:8005/vehicules"
-    : "http://100.106.223.93:8005/vehicules";
+    : "http://100.112.66.13:8005/vehicules";
 
-const API_BASE = new URL(API_VEHICULES).origin;s
+
+const API_BASE = new URL(API_VEHICULES).origin;
 
 const STATUTS = [
     "DISPONIBLE",
