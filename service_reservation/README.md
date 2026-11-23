@@ -3,14 +3,14 @@
 Responsable : Maryam OUBLAL (groupe G9). Fonctionnalités F001 → F004 du dossier de spécifications, en version « site de réservation » :
 
 - **Site client** (type Goride) : le client choisit ses dates, compare les véhicules du **service Véhicule**, réserve, paie (paiement simulé) et suit ses réservations.
-- **Espace agence** (`/admin`) : l'administrateur **consulte et gère** les réservations faites sur le site (confirmation d'un paiement au comptoir, annulation, export CSV). Il ne crée ni ne modifie de réservation.
+- **Espace agence** (`/admin`) : l'administrateur **consulte et gère** les réservations faites sur le site (confirmation d'un paiement au comptoir, annulation, export CSV). Il ne crée ni ne modifie de réservation. **Pas d'écran de connexion ici** : l'admin se connecte dans le tableau de bord de Leila, dont le menu « Réservations » ouvre cet espace avec son jeton (`/admin/reservations#jeton=…`, vérifié auprès de service_auth).
 - **Une seule base** : `db_location_voitures` (dump `Base_de_données/db_location_voitures.sql`), partagée par tous les services.
 
 ```text
 Navigateur ─► frontend_reservation (nginx, port 3002)
                ├─ /api/reservation/* ─► service_reservation (8002) ─┐
                ├─ /api/auth/*        ─► service_auth (8004)         │  GET /vehicules (HTTP)
-               └─ /api/vehicule/*    ─► service_vehicule (8001) ◄───┘  photos /uploads/…
+               └─ /api/vehicule/*    ─► service_vehicule (8005) ◄───┘  photos /uploads/…
                                               │
                          MySQL : db_location_voitures (base UNIQUE)
 ```
@@ -33,7 +33,8 @@ Navigateur ─► frontend_reservation (nginx, port 3002)
 | Vérification (F003) → création `EN_ATTENTE` | `/reserver/:id` | client |
 | Paiement simulé ou à l'agence → confirmation (F004) | `/mes-reservations/:id/paiement` | client |
 | Mes réservations, détail, annulation, impression | `/mes-reservations[/:id]` | client |
-| Gestion des réservations (F001), détail (F003), clients | `/admin/reservations[/:id]`, `/admin/clients[/:id]` | administrateur |
+| Gestion des réservations (F001), détail (F003), clients | `/admin/reservations[/:id]`, `/admin/clients[/:id]` | administrateur (jeton transmis par le tableau de bord de Leila) |
+| Accès agence sans session : lien vers le tableau de bord admin | `/admin/acces` | public |
 
 ## API
 
@@ -69,20 +70,26 @@ Erreurs : `{"detail", "code", "erreurs": [{"champ", "message"}]}` – 401, 403, 
 
 ## Lancer
 
+**Avec Tailscale (chacune lance son service sur sa machine)** – guide complet : [docs/INTEGRATION_TAILSCALE.md](docs/INTEGRATION_TAILSCALE.md)
+
 ```powershell
-# Depuis la racine du dépôt (copier .env.example en .env et remplir les secrets)
-docker compose up --build
-# Site : http://localhost:3002   Espace agence : http://localhost:3002/admin   API : http://localhost:8002/docs
-docker compose exec service_auth python -m service_auth.create_admin   # premier administrateur
+cd service_reservation
+copy .env.example .env        # remplir : base partagée, adresses Tailscale de Leila, JWT_SECRET, clés
+docker compose up --build -d
+# Site : http://localhost:3002   API : http://localhost:8002/docs
+# Collègues : http://<IP-Tailscale-de-Maryam>:8002 (API) et :3002 (site)
 ```
 
-Les clients créent leur compte sur le site (`/inscription`). Développement sans Docker :
+Test en solo, avec une base locale initialisée par le dump officiel : `docker compose --profile base-locale up --build -d` (et la ligne `DATABASE_URL` « mysql » du `.env.example`).
+
+Développement sans Docker :
 
 ```powershell
 pip install -r service_reservation/requirements-dev.txt
-$env:DATABASE_URL="mysql+pymysql://location_app:MDP@127.0.0.1:3306/db_location_voitures"
-$env:JWT_SECRET="meme-secret-que-service_auth"; uvicorn service_reservation.main:app --port 8002 --reload
-cd service_reservation/frontend; npm install; npm run dev   # http://localhost:5173 (relais 8002, 8004, 8001)
+$env:DATABASE_URL="mysql+pymysql://location_app:MDP@<hôte>:3306/db_location_voitures"
+$env:JWT_SECRET="meme-secret-que-service_auth"; $env:VEHICLE_SERVICE_URL="http://100.112.66.13:8005"
+uvicorn service_reservation.main:app --port 8002 --reload
+cd service_reservation/frontend; npm install; $env:VITE_PROXY_AUTH="http://100.112.66.13:8014"; $env:VITE_PROXY_VEHICULE="http://100.112.66.13:8005"; npm run dev
 ```
 
 ## Tests
@@ -102,7 +109,9 @@ Vérifié de bout en bout avec `service_auth` (branche de Laila) et le service V
 |---|---|---|
 | `DATABASE_URL` | `mysql+pymysql://location_app:location_app@127.0.0.1:3306/db_location_voitures` | Base unique de l'équipe |
 | `JWT_SECRET` | – | Même secret que `service_auth` |
-| `VEHICLE_SERVICE_URL` | `http://127.0.0.1:8001` | API Véhicule (Compose : `http://service_vehicule:8000`) |
+| `VEHICLE_SERVICE_URL` | `http://127.0.0.1:8005` | API Véhicule de Leila (Tailscale : `http://100.112.66.13:8005`) |
+| `AUTH_API_URL` | – | Service Auth de Leila, relayé par le site (Tailscale : `http://100.112.66.13:8014`) |
+| `ADMIN_DASHBOARD_URL` | `http://<hôte>:3000/admin/login.html` | Tableau de bord admin de Leila (connexion de l'agence) |
 | `SERVICE_API_KEYS` | vide | Clés des services appelants `nom:clé,…` (en-tête `X-API-Key`) |
 | `LECTURE_PUBLIQUE` | `true` | À passer à `false` quand Contrat enverra sa clé |
 | `CLIENT_PROVIDER` | `db` | `http` quand Auth exposera `GET /clients` |

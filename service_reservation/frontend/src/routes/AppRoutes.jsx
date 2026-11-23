@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { PageLoader } from '../components/ui/Feedback'
 import { useAuth } from '../context/AuthContext'
 import AdminLayout from '../layouts/AdminLayout'
@@ -16,7 +16,7 @@ const MyReservationDetailPage = lazy(() => import('../pages/site/MyReservationDe
 const ClientLoginPage = lazy(() => import('../pages/site/ClientLoginPage'))
 const RegisterPage = lazy(() => import('../pages/site/RegisterPage'))
 // Espace agence : gestion et consultation
-const AdminLoginPage = lazy(() => import('../pages/admin/AdminLoginPage'))
+const AdminAccessPage = lazy(() => import('../pages/admin/AdminAccessPage'))
 const ReservationListPage = lazy(() => import('../pages/admin/ReservationListPage'))
 const ReservationDetailPage = lazy(() => import('../pages/admin/ReservationDetailPage'))
 const ClientListPage = lazy(() => import('../pages/admin/ClientListPage'))
@@ -32,10 +32,29 @@ function RequireClient({ children }) {
   return children
 }
 
+/**
+ * Espace agence : jeton transmis par le tableau de bord de Leila dans l'ancre de l'adresse
+ * (…/admin/reservations#jeton=…). L'ancre n'est jamais envoyée au serveur et on l'efface aussitôt.
+ */
 function RequireAdmin({ children }) {
-  const { isAdmin } = useAuth()
+  const { isAdmin, loginWithToken } = useAuth()
   const location = useLocation()
-  if (!isAdmin) return <Navigate to="/admin/connexion" replace state={{ from: location }} />
+  const navigate = useNavigate()
+  const jeton = new URLSearchParams(location.hash.slice(1)).get('jeton')
+  const [etat, setEtat] = useState(jeton ? 'verification' : 'pret')
+
+  useEffect(() => {
+    if (!jeton) return
+    const cible = location.pathname + location.search
+    window.history.replaceState(null, '', cible)
+    loginWithToken(jeton)
+      .then(() => { setEtat('pret'); navigate(cible, { replace: true }) })
+      .catch(() => setEtat('refus'))
+  }, [jeton]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (etat === 'verification') return <PageLoader />
+  if (etat === 'refus') return <Navigate to="/admin/acces" replace state={{ refus: true }} />
+  if (!isAdmin) return <Navigate to="/admin/acces" replace />
   return children
 }
 
@@ -56,7 +75,8 @@ export default function AppRoutes() {
           <Route path="*" element={<NotFoundPage />} />
         </Route>
 
-        <Route path="admin/connexion" element={<AdminLoginPage />} />
+        <Route path="admin/acces" element={<AdminAccessPage />} />
+        <Route path="admin/connexion" element={<Navigate to="/admin/acces" replace />} />
         <Route path="admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
           <Route index element={<Navigate to="reservations" replace />} />
           <Route path="reservations" element={<ReservationListPage />} />
@@ -66,7 +86,7 @@ export default function AppRoutes() {
           <Route path="*" element={<NotFoundPage admin />} />
         </Route>
         {/* anciennes adresses de l'espace de gestion */}
-        <Route path="login" element={<Navigate to="/admin/connexion" replace />} />
+        <Route path="login" element={<Navigate to="/admin/acces" replace />} />
         <Route path="reservations/*" element={<Navigate to="/admin/reservations" replace />} />
       </Routes>
     </Suspense>

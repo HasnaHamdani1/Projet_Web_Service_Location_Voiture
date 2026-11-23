@@ -125,6 +125,11 @@ export const initials = (name = '') =>
     .join('')
 
 /** URL d'une photo du service Véhicule (`/uploads/x.jpg`) vue depuis le navigateur. */
+/** Tableau de bord administrateur de Leila (connexion de l'agence). */
+export function adminDashboardUrl() {
+  return import.meta.env.VITE_ADMIN_DASHBOARD_URL || `${window.location.protocol}//${window.location.hostname}:3000/admin/login.html`
+}
+
 export function vehicleImageUrl(path) {
   if (!path) return null
   if (/^https?:\/\//.test(path)) return path

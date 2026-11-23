@@ -17,7 +17,7 @@ The existing Vehicle and Reservation APIs are also implemented in Python with Fa
 These describe the files as they currently exist; they are not all deployment-ready yet.
 
 - Vehicle API code is at the repository root (`main.py`, `models.py`, `database.py`). It has CRUD routes under `/vehicules` and the statuses `DISPONIBLE`, `RESERVE`, `LOUE`, and `MAINTENANCE`.
-- Reservation API is in `service_reservation/` (rewritten by its owner, Maryam OUBLAL, on branch `branch_maryam`). Customers book on a public booking site (catalogue fed by the Vehicle API, simulated payment); administrators only manage and consult bookings. It keeps `GET /reservations`, `GET /reservations/{reservation_id}`, `POST /reservations` (now **CLIENT token only**), `POST /reservations/{reservation_id}/paiement`, and `PUT /reservations/{reservation_id}/annulation` with their previous paths and response shapes, and adds `POST /reservations/{reservation_id}/prolongations` (section 3.2.1), the public catalogue and the admin routes documented in `service_reservation/README.md`. It maps the shared `reservations` table of `Base_de_données/db_location_voitures.sql` without changing it, and stores its own data in `reservation_*` tables (`service_reservation/migrations/006_service_reservation.sql`).
+- Reservation API is in `service_reservation/`. It has `GET /reservations/{reservation_id}`, `POST /reservations`, `POST /reservations/{reservation_id}/paiement`, and `PUT /reservations/{reservation_id}/annulation`.
 - The Reservation GET response currently exposes `id`, `client_id`, `vehicule_id`, `date_debut`, `date_fin`, `prix_total`, and `statut`. It returns 404 when the reservation does not exist. The GET response is an unwrapped record; the create route currently returns the record inside a `reservation` object.
 - Successful simulated payment changes Reservation status to `CONFIRMEE`. The service also uses `EN_ATTENTE` and `ANNULEE`.
 - The SQL dump defines Contract statuses `EN_ATTENTE`, `VALIDE`, and `CLOTURE`, defaulting to `EN_ATTENTE`. It has unique keys for `numero_contrat` and `reservation_id`.
@@ -82,11 +82,7 @@ The routes below distinguish **implemented in the repository** from **proposed f
 | Reservation | `GET /reservations/{reservation_id}` | Canonical reservation read used by Contract | Implemented |
 | Reservation | `POST /reservations` | Create reservation | Implemented |
 | Reservation | `POST /reservations/{reservation_id}/paiement` | Simulate payment; successful result sets `CONFIRMEE` | Implemented |
-| Reservation | `PUT /reservations/{reservation_id}/annulation` | Cancel an eligible reservation (optional body `{"motif": "..."}`) | Implemented |
-| Reservation | `GET /reservations` | JSON array by default (shape used by Contract); paginated object only when `?page=` is given | Implemented |
-| Reservation | `POST /reservations/{reservation_id}/prolongations` | Contract-driven extension, `Idempotency-Key` header, body `{"nouvelle_date_fin": "YYYY-MM-DD"}` | Implemented on `branch_maryam` (to merge) |
-| Reservation | `GET /catalogue/vehicules[/{id}]`, `POST /reservations/devis` | Public booking site: Vehicle API data + availability and server-computed price for a period (no customer data) | Implemented on `branch_maryam` |
-| Reservation | `GET /reservations/stats`, `/reservations/confirmees`, `/reservations/numero/{numero}`, `/reservations/export.csv`, `PATCH /reservations/{id}/statut`, `GET /disponibilites/vehicules[/{id}]`, `GET /clients[/{id}]` | Admin management/consultation F001–F004 (see `service_reservation/README.md`). `PUT /reservations/{id}` was removed (405): admins do not edit customer bookings | Implemented on `branch_maryam` |
+| Reservation | `PUT /reservations/{reservation_id}/annulation` | Cancel an eligible reservation | Implemented |
 | Authentication | `POST /auth/inscription` | Register a customer account | Implemented in `service_auth/` |
 | Authentication | `POST /auth/token` | Verify credentials and issue JWT | Implemented in `service_auth/` |
 | Authentication | `GET /auth/me` | Return authenticated account profile | Implemented in `service_auth/` |
@@ -128,7 +124,7 @@ Extensions cannot safely be implemented by Contract alone: only Reservation owns
 4. Reservation returns `reservation_id`, `date_fin_precedente`, `date_fin`, `montant_supplementaire`, and a unique `prolongation_id`. Contract stores an append-only annex referencing that ID and returns 201 with the annex. The original validated contract terms remain unchanged.
 5. If Contract persistence fails after Reservation succeeds, retry with the same `Idempotency-Key`; Reservation must return the original result so Contract can finish persisting the annex without extending twice.
 
-The Contract side follows this interface. The Reservation endpoint is now **implemented** on branch `branch_maryam` (atomic per-vehicle lock, idempotency stored in `reservation_prolongations`; replaying the same key returns the original result, reusing a key for a different date returns 409). It still needs to be merged and ratified by the Contract owner. Calls are accepted with an administrator JWT or a service key in `X-API-Key` (`RESERVATION_SERVICE_API_KEYS` in `.env`). The Contract-service owner will leave `service_reservation/` unchanged and integrate against that endpoint when it is available. No service may approve an extension using only a read-only availability check, because another booking could win the race.
+The Contract side now follows this proposed interface, but the Reservation endpoint is still **not implemented or ratified**. The Reservation-service owner is responsible for implementing the endpoint and its idempotency storage before end-to-end extension works. The Contract-service owner will leave `service_reservation/` unchanged and integrate against that endpoint when it is available. No service may approve an extension using only a read-only availability check, because another booking could win the race.
 
 ### 3.3 Shared data types and business meaning
 
@@ -156,7 +152,7 @@ The Auth service now registers clients and issues HS256 JWTs with `sub` (user ID
 
 ### 3.6 MySQL schema and migrations
 
-The root Compose setup shares one MySQL database (`db_location_voitures`) across the APIs and initializes it from `Base_de_données/db_location_voitures.sql`, followed by Contract migrations 002-005 and Reservation migration 006 on a fresh volume. Remaining schema and migration decisions:
+The root Compose setup currently shares MySQL across the available APIs and initializes the schema from `db_location_vehicules.sql`, followed by Contract migrations 002-005 on a fresh volume. Remaining schema and migration decisions:
 
 1. The Vehicle and Reservation ORM mappings use the dump's singular table names; Reservation maps its API/model field `prix_total` to SQL column `montant_estime`.
 2. The SQL dump allows `PAYEE`, while Reservation code uses `CONFIRMEE`; agree whether `PAYEE` is removed or given a distinct meaning.
@@ -181,7 +177,7 @@ The root Compose initialization applies the base dump and Contract migrations 00
 - Each owner tests their service's business rules; the team maintains integration checks that start Compose and exercise service-to-service paths, especially Reservation → Contract and Return → Contract/Vehicle.
 - Use the same lint/format conventions and Python version if the team adopts Python/FastAPI for every service. Keep service dependencies in that service's requirements file.
 - Write all Git commit messages in French, including the subject and any body. Keep them concise and describe the change, for example: `Ajouter le service de contrat` or `Corriger le calcul du montant`.
-- Auth issues HS256 JWTs with `sub` (numeric user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`; the Contract service validates this format. Reservation now enforces these claims on writes (a CLIENT only creates, pays, reads and cancels their own reservations; admin-only routes require `ADMINISTRATEUR`). Reads stay open while `LECTURE_PUBLIQUE=true` because Contract calls Reservation without a token; Vehicle still needs role enforcement.
+- Auth issues HS256 JWTs with `sub` (numeric user ID encoded as a string), `role` (`CLIENT` or `ADMINISTRATEUR`), and `exp`; the Contract service validates this format. Vehicle and Reservation still need role enforcement using the same claims.
 - Assign an owner for `compose.yaml`, the canonical schema/migrations, and the root README. Service owners should notify the team before changing a shared API field, enum, table, or environment variable.
 
 ## 4. Target repository layout
@@ -219,37 +215,18 @@ LocationVoiture/
 
 The repository currently keeps the Vehicle service files at the root and the other available services in their own directories. The Return service and integration-test directory are not present yet. Treat this tree as a possible future reorganization, not a prerequisite for deployment; coordinate any file moves with the Compose build contexts and Dockerfiles.
 
-## 4.1 Reservation service: integration notes and open issues (added by the Reservation owner)
-
-Implemented on `branch_maryam` and verified end to end on **one** MariaDB database loaded from `Base_de_données/db_location_voitures.sql`, with `service_auth` from `fonctionnalite/admin-frontend` and the Vehicle service patched as described in item 2 (46 backend tests, 30 frontend tests, real browser journey, `service_contrat/reservation_client.py`):
-
-- Booking site (`frontend_reservation`, port 3002): home + date search, catalogue (Vehicle API data and photos through `/api/vehicule/uploads/...`), vehicle page, sign-in/sign-up through `service_auth`, review, simulated payment or pay-at-agency, "my bookings". Agency area under `/admin` for `ADMINISTRATEUR` accounts: list/KPIs, detail, confirm a counter payment, cancel, CSV export, read-only customers.
-- Error bodies keep FastAPI's `{"detail": "..."}` and add `code` and `erreurs: [{"champ", "message"}]`.
-- Double booking is prevented under MySQL with a per-vehicle row lock (`reservation_verrous`, `SELECT ... FOR UPDATE`) and READ COMMITTED isolation; availability is per period (start inclusive, end exclusive). `MAINTENANCE` vehicles are never offered.
-- Customer names are read-only from `utilisateurs`/`clients` (`CLIENT_PROVIDER=db`) because Auth exposes no client read route. **Exception to section 3.1, to be removed** when Auth adds `GET /clients` and `GET /clients/{id}` (then set `CLIENT_PROVIDER=http`).
-
-Single shared database: status of the blocking issues (clean-volume init simulated: dump + Contract 002-005 from `service-contrat` + 006 + 007 all apply)
-
-1. **Fixed on this branch:** `compose.yaml` mounted a missing `./db_location_vehicules.sql` and created `db_location_vehicules` while the dump creates `db_location_voitures`. Compose now mounts `Base_de_données/db_location_voitures.sql` and every service defaults to `db_location_voitures` (`.env.example` updated). The Contract migration mounts 002-005 are commented out on this branch: on `main` they alter the old `contrat` table, which the dump does not create, so MySQL initialization would stop at 002. The Contract PR (`service-contrat`, whose migrations already target `contrats`) restores them, with `005_add_deposit_details.sql`.
-2. **Vehicle owner:** the Vehicle service maps a separate `vehicule` table and calls `create_all()`, so on the shared database it silently creates a second vehicle table; `reservations.vehicule_id` references `vehicules`, so vehicles added from the dashboard cannot be booked (Reservation answers 422 on `vehicule_id`, never 500). A ready-to-apply patch is in `service_reservation/docs/correctif-service-vehicule-base-unique.patch` (`git apply` on `fonctionnalite/admin-frontend`): maps `vehicules` (`prixParJour` ↔ `prix_par_jour`, `annee`, `administrateur_id`), no `create_all()` on MySQL, removes the duplicated half of `main.py`, adds `database/migrations/007_vehicules_image_url.sql` (mount it in Compose as `007_...`). The JSON contract (`prix_par_jour`, `image_url`) does not change. Vehicle write routes (`POST/PUT/DELETE /vehicules`, image upload) should also require an `ADMINISTRATEUR` token.
-3. **Auth owner:** `main`/`service-contrat` map `utilisateur`/`client`/`administrateur` while the dump and `fonctionnalite/admin-frontend` use the plural tables (Reservation reads the plural ones). Merge the plural version, add `GET /clients` and `GET /clients/{id}` (admin token).
-4. **Team:** currency (Reservation `DEVISE`, default `€`; the Contract frontend defaults to `MAD`).
-5. **Contract owner:** merge `service-contrat` (model on `contrats` + migrations 002-005 that apply on the dump) and restore the four Compose mounts; send a token or `X-API-Key` to Reservation so that `RESERVATION_LECTURE_PUBLIQUE` can be set to `false`; the common frontend "Réserver" entry should link to the booking site (`http://localhost:3002`).
-6. **Every Python service except Reservation (Vehicle, Auth, Contract, Return):** add `cryptography>=42` to its requirements. MySQL 8.4 (the Compose image) authenticates with `caching_sha2_password`; without `cryptography`, PyMySQL cannot complete the first full authentication over TCP (RuntimeError in `pymysql/_auth.py`), the health check fails and the services that depend on it never start.
-
 ## 5. Decisions for the next team sync
 
 Record an owner and decision for each item:
 
 1. Confirm the canonical Reservation paid/confirmed status (`CONFIRMEE` recommended) and whether `PAYEE` is removed or given a separate meaning.
-2. Confirm the canonical MySQL image/schema import works from a clean volume; reconcile any remaining mappings with `Base_de_données/db_location_voitures.sql` (single database `db_location_voitures`).
+2. Confirm the canonical MySQL image/schema import works from a clean volume; reconcile any remaining mappings with `db_location_vehicules.sql`.
 3. Confirm team-wide Python/FastAPI/SQLAlchemy use (the existing services use it; the Contract owner has chosen Python).
 4. Choose project currency and adopt fixed-precision money storage.
 5. Add and agree role enforcement for Vehicle, Reservation, and Return endpoints using the Auth token claims.
 6. Confirm the proposed Reservation/Contract extension workflow, deposit policy, and how Return triggers Contract closure.
 7. The frontend has a repository-level implementation; the Return service is still absent and assigned to its owner. Assign owners for integration testing and ongoing Compose/schema maintenance.
 8. Ratify the common REST paths, response/error shapes, and Reservation extension idempotency contract in section 3.2.1.
-9. Done by the Reservation-service owner on `branch_maryam`: `POST /reservations/{reservation_id}/prolongations` (section 3.2.1). Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
-10. Resolve the open issues listed in section 4.1 (Compose database name and path: fixed on `branch_maryam`; `vehicule` vs `vehicules`: patch provided; Auth table names and `GET /clients`; currency; authenticated reads from Contract).
+9. Reservation-service owner: implement and document `POST /reservations/{reservation_id}/prolongations` as specified in section 3.2.1; Contract-service owner: verify the response contract and complete end-to-end integration after it is merged.
 
 Once these are confirmed, update this file and implement against these shared contracts. Changes to API fields, statuses, or schema should be coordinated before merging.

@@ -4,7 +4,6 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { StatusBadge } from '../components/ui/Badge'
 import { AuthProvider } from '../context/AuthContext'
-import AdminLoginPage from '../pages/admin/AdminLoginPage'
 import ReservationListPage from '../pages/admin/ReservationListPage'
 import CataloguePage from '../pages/site/CataloguePage'
 import CheckoutPage from '../pages/site/CheckoutPage'
@@ -255,32 +254,34 @@ describe('Comptes client', () => {
 })
 
 // ------------------------------------------------------------------ espace agence
-describe('Connexion agence', () => {
-  it('signale les champs obligatoires sans appeler l’API', async () => {
-    renderAt('/admin/connexion', <AdminLoginPage />)
-    await userEvent.click(screen.getByRole('button', { name: /se connecter/i }))
-    expect(await screen.findByText("L'adresse e-mail est obligatoire")).toBeInTheDocument()
-    expect(screen.getByText('Le mot de passe est obligatoire')).toBeInTheDocument()
-    expect(authService.login).not.toHaveBeenCalled()
+describe('Espace agence : connexion par le tableau de bord de Leila', () => {
+  beforeEach(() => {
+    reservationService.stats.mockResolvedValue(STATS)
+    reservationService.list.mockResolvedValue({ items: [], total: 0, page: 1, size: 10, pages: 1 })
   })
 
-  it('refuse un compte client', async () => {
-    authService.login.mockResolvedValue({ access_token: 'tok' })
+  it('sans session, renvoie vers le tableau de bord administrateur (plus de formulaire ici)', async () => {
+    renderApp('/admin/reservations')
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/admin/acces'))
+    expect(await screen.findByRole('link', { name: /ouvrir le tableau de bord administrateur/i })).toHaveAttribute('href', expect.stringContaining('/admin/login.html'))
+    expect(screen.queryByPlaceholderText('Mot de passe')).toBeNull()
+  })
+
+  it('accepte le jeton transmis par le tableau de bord après vérification auprès de service_auth', async () => {
+    authService.me.mockResolvedValue(ADMIN)
+    renderApp('/admin/reservations#jeton=jeton-admin-leila')
+    await waitFor(() => expect(authService.me).toHaveBeenCalledWith('jeton-admin-leila'))
+    await waitFor(() => expect(localStorage.getItem(TOKEN_KEY)).toBe('jeton-admin-leila'))
+    expect(await screen.findByText('Gestion des réservations')).toBeInTheDocument()
+    expect(screen.getByTestId('where')).toHaveTextContent('/admin/reservations')
+  })
+
+  it('refuse un jeton qui n’est pas celui d’un administrateur', async () => {
     authService.me.mockResolvedValue(CLAIRE)
-    renderAt('/admin/connexion', <AdminLoginPage />)
-    await userEvent.type(screen.getByPlaceholderText('Adresse e-mail'), 'claire@exemple.fr')
-    await userEvent.type(screen.getByPlaceholderText('Mot de passe'), 'secret')
-    await userEvent.click(screen.getByRole('button', { name: /se connecter/i }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('réservé aux administrateurs')
+    renderApp('/admin/reservations#jeton=jeton-client')
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/admin/acces'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Accès refusé')
     expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
-  })
-
-  it('permet d’afficher le mot de passe', async () => {
-    renderAt('/admin/connexion', <AdminLoginPage />)
-    const pwd = screen.getByPlaceholderText('Mot de passe')
-    expect(pwd).toHaveAttribute('type', 'password')
-    await userEvent.click(screen.getByRole('button', { name: 'Afficher le mot de passe' }))
-    expect(pwd).toHaveAttribute('type', 'text')
   })
 })
 
@@ -340,7 +341,7 @@ describe('Accès par rôle', () => {
   it('un client ne peut pas ouvrir l’espace agence', async () => {
     connecter(CLAIRE)
     renderApp('/admin/reservations')
-    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/admin/connexion'))
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/admin/acces'))
   })
 
   it('un administrateur est renvoyé vers la gestion s’il ouvre l’espace client', async () => {
