@@ -1,4 +1,5 @@
-const API_URL = 'http://100.108.179.81:8000';
+// Service Retour : VITE_RETOUR_API_URL, sinon même machine que la page (port 8006 de compose.yaml)
+const API_URL = import.meta.env.VITE_RETOUR_API_URL || `${window.location.protocol}//${window.location.hostname}:8006`;
 
 // Extraire un message lisible des erreurs FastAPI
 async function lireErreur(response, defaut) {
