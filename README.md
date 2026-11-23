@@ -20,7 +20,7 @@ Distributed car-rental application. The current Compose stack runs the frontend,
    - Frontend: `http://localhost:3000`
    - MySQL is available to containers at `mysql:3306`; it is not published to the host.
 
-Compose initializes a new MySQL volume from `db_location_vehicules.sql`, then applies Contract migrations 002-005. Initialization scripts run only when MySQL creates an empty data directory. Existing volumes need the unapplied migrations run manually before deploying a newer Contract service.
+Compose initializes a new MySQL volume from the single shared schema `Base_de_données/db_location_voitures.sql` (database `db_location_voitures`), then applies Contract migrations 002-005 and Reservation migration 006. Initialization scripts run only when MySQL creates an empty data directory. Existing volumes need the unapplied migrations run manually before deploying a newer Contract service.
 
 ## Current scope and integration gaps
 

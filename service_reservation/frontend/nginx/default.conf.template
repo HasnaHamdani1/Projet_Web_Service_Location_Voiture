@@ -1,0 +1,48 @@
+server {
+  listen 80;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  add_header X-Content-Type-Options nosniff always;
+  add_header X-Frame-Options DENY always;
+  add_header Referrer-Policy no-referrer always;
+
+  # Résolution DNS de Compose à la demande : nginx démarre même si un service n'est pas encore prêt
+  resolver 127.0.0.11 valid=10s ipv6=off;
+
+  # /api/reservation/... → service_reservation (préfixe retiré)
+  location /api/reservation/ {
+    set $reservation_upstream ${RESERVATION_API_UPSTREAM};
+    rewrite ^/api/reservation/(.*)$ /$1 break;
+    proxy_pass $reservation_upstream;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
+  # /api/auth/... → service_auth (préfixe retiré)
+  location /api/auth/ {
+    set $auth_upstream ${AUTH_API_UPSTREAM};
+    rewrite ^/api/auth/(.*)$ /$1 break;
+    proxy_pass $auth_upstream;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
+  # /api/vehicule/... → service_vehicule (photos /uploads/… du catalogue)
+  location /api/vehicule/ {
+    set $vehicle_upstream ${VEHICLE_API_UPSTREAM};
+    rewrite ^/api/vehicule/(.*)$ /$1 break;
+    proxy_pass $vehicle_upstream;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
+  location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+  }
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}

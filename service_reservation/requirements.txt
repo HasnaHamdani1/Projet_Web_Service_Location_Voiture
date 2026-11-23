@@ -1,5 +1,11 @@
 fastapi>=0.115,<1.0
-httpx>=0.27,<1.0
-PyMySQL>=1.1,<2.0
-SQLAlchemy>=2.0,<3.0
 uvicorn[standard]>=0.30,<1.0
+SQLAlchemy>=2.0,<3.0
+PyMySQL>=1.1,<2.0
+# requis par PyMySQL pour l'authentification caching_sha2_password de MySQL 8
+cryptography>=42
+pydantic-settings>=2.4,<3.0
+PyJWT>=2.8,<3.0
+httpx>=0.27,<1.0
+# base de fuseaux horaires (absente des images python:*-slim récentes)
+tzdata>=2024.1
