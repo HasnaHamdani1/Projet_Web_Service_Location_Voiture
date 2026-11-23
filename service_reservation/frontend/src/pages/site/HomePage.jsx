@@ -19,7 +19,7 @@ const ETAPES = [
 const ATOUTS = [
   { icon: BadgeCheck, titre: 'Prix clair', texte: 'Total TTC affiché avant de réserver, TVA comprise.' },
   { icon: RotateCcw, titre: 'Annulation en ligne', texte: 'Annulez vous-même depuis votre espace, jusqu’au jour du départ.' },
-  { icon: Headset, titre: 'Assistance renforcée', texte: 'Option à 6,00 € par jour pour rouler l’esprit tranquille.' },
+  { icon: Headset, titre: 'Assistance renforcée', texte: 'Option à prix fixe par jour, pour rouler l’esprit tranquille.' },
   { icon: CalendarCheck, titre: 'Disponibilité garantie', texte: 'Un véhicule réservé ne peut pas être attribué à quelqu’un d’autre.' },
 ]
 

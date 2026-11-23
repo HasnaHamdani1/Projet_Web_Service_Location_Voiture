@@ -176,7 +176,8 @@ class ServiceReservation:
     @staticmethod
     def _offre(v: Vehicule, jours: int | None, disponible: bool | None) -> dict:
         return {**v.en_dict(), "reservable": v.statut not in STATUTS_INDISPONIBLES, "disponible": disponible,
-                "duree_jours": jours, "prix_estime": float(arrondi(v.prix_jour * jours)) if jours else None}
+                "duree_jours": jours, "prix_estime": float(arrondi(v.prix_jour * jours)) if jours else None,
+                "devise": settings.DEVISE}
 
     def catalogue(self, *, debut: date | None, fin: date | None, recherche: str | None = None,
                   marque: str | None = None, prix_max: Decimal | None = None, tri: str = "prix_asc",

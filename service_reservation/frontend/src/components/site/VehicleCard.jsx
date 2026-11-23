@@ -33,7 +33,7 @@ export function VehicleCard({ offer, period }) {
             <p className="mt-0.5 truncate text-xs text-ink-muted">{specs.length ? specs.join(' · ') : 'Véhicule de location'}</p>
           </div>
           <p className="shrink-0 text-right">
-            <span className="text-lg font-extrabold">{formatMoney(offer.prix_par_jour)}</span>
+            <span className="text-lg font-extrabold">{formatMoney(offer.prix_par_jour, offer.devise)}</span>
             <span className="block text-[11px] text-ink-muted">par jour</span>
           </p>
         </div>
@@ -42,7 +42,7 @@ export function VehicleCard({ offer, period }) {
             {offer.prix_estime != null ? (
               <>
                 <span className="block text-[11px] uppercase tracking-wide">Total {plural(offer.duree_jours, 'jour')}</span>
-                <span className="font-bold text-ink">{formatMoney(offer.prix_estime)}</span>
+                <span className="font-bold text-ink">{formatMoney(offer.prix_estime, offer.devise)}</span>
               </>
             ) : (
               <span className="text-xs">Choisissez vos dates pour voir le total</span>

@@ -1,80 +1,51 @@
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from .enums import ContractStatus
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class ContractCreate(BaseModel):
+class ContratCreate(BaseModel):
     reservation_id: int = Field(gt=0)
 
 
-class DepositCreate(BaseModel):
-    montant_caution: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+class CautionCreate(BaseModel):
+    montant_caution: Decimal = Field(ge=0, max_digits=10, decimal_places=2)
 
 
-class ExtensionCreate(BaseModel):
-    nouvelle_date_fin: date
+class ContratStatutUpdate(BaseModel):
+    statut: Literal["CLOTURE"]
 
 
-class ReservationExtensionResult(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+class DetailsCaution(BaseModel):
+    mode_encaissement: Literal["CARTE", "ESPECES", "CHEQUE", "VIREMENT"] | None = None
+    statut_caution: Literal["RECUE", "A_RECEVOIR"] | None = None
+    conditions_particulieres: str | None = Field(default=None, max_length=1000)
 
+
+class ContratFinalisation(DetailsCaution):
     reservation_id: int = Field(gt=0)
-    prolongation_id: int = Field(gt=0)
-    date_fin_precedente: date
-    date_fin: date
-    montant_supplementaire: Decimal = Field(gt=0)
+    numero_contrat: str = Field(pattern=r"^CTR-\d{4}-[A-F0-9]{8}$")
+    montant_caution: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    signatures_confirmees: Literal[True]
 
 
-class ExtensionRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    contrat_id: int
-    reservation_prolongation_id: int
-    idempotency_key: str
-    date_fin_precedente: date
-    date_fin: date
-    montant_supplementaire: float
-    date_creation: datetime
-
-
-class ReservationSnapshot(BaseModel):
-    """The stable subset of the current Reservation GET response we consume."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    id: int = Field(gt=0)
-    client_id: int = Field(gt=0)
-    vehicule_id: int = Field(gt=0)
-    date_debut: date
-    date_fin: date
-    prix_total: Decimal = Field(gt=0)
-    statut: str
-
-    @model_validator(mode="after")
-    def check_period(self):
-        if self.date_debut >= self.date_fin:
-            raise ValueError("date_fin must be after date_debut")
-        return self
-
-
-class ContractRead(BaseModel):
+class ContratRead(DetailsCaution):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     numero_contrat: str
     date_generation: date
-    statut: ContractStatus
-    date_validation: datetime | None
-    montant_caution: float | None
-    date_enregistrement_caution: datetime | None
-    date_cloture: datetime | None
+    statut: str
     periode_prise: date
     periode_fin: date
-    montant_total: float
-    reservation_id: int | None
-    client_id: int
-    vehicule_id: int
+    montant_total: Decimal
+    reservation_id: int
+    administrateur_id: int
+    montant_caution: Decimal | None = None
+    date_validation: date | None = None
+    date_cloture: date | None = None
+
+
+class ContratDetail(ContratRead):
+    reservation: dict
