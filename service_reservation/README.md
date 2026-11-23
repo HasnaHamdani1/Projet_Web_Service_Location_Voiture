@@ -10,7 +10,7 @@ Responsable : Maryam OUBLAL (groupe G9). Fonctionnalités F001 → F004 du dossi
 Navigateur ─► frontend_reservation (nginx, port 3002)
                ├─ /api/reservation/* ─► service_reservation (8002) ─┐
                ├─ /api/auth/*        ─► service_auth (8004)         │  GET /vehicules (HTTP)
-               └─ /api/vehicule/*    ─► service_vehicule (8001) ◄───┘  photos /uploads/…
+               └─ /api/vehicule/*    ─► service_vehicule (8005) ◄───┘  photos /uploads/…
                                               │
                          MySQL : db_location_voitures (base UNIQUE)
 ```
@@ -82,7 +82,7 @@ Les clients créent leur compte sur le site (`/inscription`). Développement san
 pip install -r service_reservation/requirements-dev.txt
 $env:DATABASE_URL="mysql+pymysql://location_app:MDP@127.0.0.1:3306/db_location_voitures"
 $env:JWT_SECRET="meme-secret-que-service_auth"; uvicorn service_reservation.main:app --port 8002 --reload
-cd service_reservation/frontend; npm install; npm run dev   # http://localhost:5173 (relais 8002, 8004, 8001)
+cd service_reservation/frontend; npm install; npm run dev   # http://localhost:5173 (relais 8002, 8004, 8005)
 ```
 
 ## Tests
@@ -102,7 +102,7 @@ Vérifié de bout en bout avec `service_auth` (branche de Laila) et le service V
 |---|---|---|
 | `DATABASE_URL` | `mysql+pymysql://location_app:location_app@127.0.0.1:3306/db_location_voitures` | Base unique de l'équipe |
 | `JWT_SECRET` | – | Même secret que `service_auth` |
-| `VEHICLE_SERVICE_URL` | `http://127.0.0.1:8001` | API Véhicule (Compose : `http://service_vehicule:8000`) |
+| `VEHICLE_SERVICE_URL` | `http://127.0.0.1:8005` | API Véhicule (Compose : `http://service_vehicule:8000`) |
 | `SERVICE_API_KEYS` | vide | Clés des services appelants `nom:clé,…` (en-tête `X-API-Key`) |
 | `LECTURE_PUBLIQUE` | `true` | À passer à `false` quand Contrat enverra sa clé |
 | `CLIENT_PROVIDER` | `db` | `http` quand Auth exposera `GET /clients` |

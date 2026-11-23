@@ -1,0 +1,74 @@
+.nouveau { max-width: 1100px; }
+.nouveau-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.sous-titre { margin: 0; color: var(--muted); max-width: 640px; }
+.badge-etape { background: #eceef1; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+.badge-etape::first-letter { color: var(--primary); }
+.link { background: none; border: none; padding: 0; color: var(--primary); font-weight: 600; font-size: inherit; }
+
+.form-card { background: var(--card); border-radius: 16px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.section-titre { display: flex; align-items: center; gap: 8px; margin: 28px 0 14px; font-size: 16px; }
+.section-titre:first-child { margin-top: 0; }
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+
+.grille-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.grille-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
+.champ { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.grille-2 .champ, .grille-3 .champ { margin-bottom: 0; }
+.champ-moitie { max-width: calc(50% - 10px); }
+.champ-label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; }
+.champ-label em { font-style: normal; font-size: 12px; color: var(--primary); }
+.champ input, .champ select, .champ textarea {
+  width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px;
+  background: #fff; font: inherit; color: var(--text);
+}
+.champ input[readonly] { background: #f3f4f6; }
+.champ textarea { resize: vertical; }
+.champ input.total { background: #e8ecf2; color: var(--primary); font-weight: 700; font-size: 20px; }
+.aide { color: var(--muted); font-size: 12px; }
+
+.actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #eef0f3; }
+.btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+.btn:disabled { opacity: .6; cursor: default; }
+.erreur { background: #fdecec; color: var(--danger); border-radius: 8px; padding: 12px 14px; margin: 20px 0 0; font-size: 14px; }
+
+@media (max-width: 700px) {
+  .form-card { padding: 22px; }
+  .grille-2, .grille-3 { grid-template-columns: 1fr; }
+  .champ-moitie { max-width: 100%; }
+}
+
+/* ===== Version compacte : tout le formulaire sans défilement ===== */
+.nouveau.compact { max-width: 1200px; }
+.nouveau.compact .nouveau-header { margin-bottom: 14px; }
+.nouveau.compact .nouveau-header h1 { font-size: 1.5rem; margin: 0 0 4px; }
+.nouveau.compact .sous-titre { font-size: 13px; }
+
+.nouveau.compact .form-card { padding: 22px 26px; }
+.nouveau.compact .champ { gap: 5px; margin-bottom: 0; }
+.nouveau.compact .champ-label { font-size: 12.5px; }
+.nouveau.compact .champ input,
+.nouveau.compact .champ select,
+.nouveau.compact .champ textarea { padding: 9px 12px; font-size: 14px; }
+.nouveau.compact .champ input.total { font-size: 17px; }
+.nouveau.compact .champ textarea { resize: none; }
+
+.grille-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 16px; }
+.grille-dommage { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px 16px; align-items: start; }
+
+.mini-titre {
+  display: flex; align-items: baseline; gap: 10px;
+  margin: 18px 0 8px; font-size: 13px; font-weight: 700; color: var(--text);
+}
+.mini-titre span { font-weight: 400; font-size: 12px; color: var(--muted); }
+
+.nouveau.compact .erreur { margin: 10px 0 0; padding: 9px 12px; font-size: 13px; }
+.nouveau.compact .actions { margin-top: 18px; padding-top: 16px; }
+
+@media (max-width: 1000px) {
+  .grille-4 { grid-template-columns: repeat(2, 1fr); }
+  .grille-dommage { grid-template-columns: 1fr 1fr; }
+  .grille-dommage .champ:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .grille-4, .grille-dommage { grid-template-columns: 1fr; }
+}

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     APP_TIMEZONE: str = "Africa/Casablanca"
 
     # Services de l'équipe
-    VEHICLE_SERVICE_URL: str = "http://127.0.0.1:8001"
+    VEHICLE_SERVICE_URL: str = "http://127.0.0.1:8005"
     VEHICLE_SERVICE_TIMEOUT: float = 5.0
     # Source des clients : "db" (lecture seule utilisateurs/clients) ou "http" (API Auth)
     CLIENT_PROVIDER: Literal["db", "http"] = "db"

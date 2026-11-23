@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
         },
         // Catalogue et photos du service Véhicule (Leila) : /api/vehicule/uploads/… → /uploads/…
         '/api/vehicule': {
-          target: env.VITE_PROXY_VEHICULE || 'http://localhost:8001',
+          target: env.VITE_PROXY_VEHICULE || 'http://localhost:8005',
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/api\/vehicule/, ''),
         },
