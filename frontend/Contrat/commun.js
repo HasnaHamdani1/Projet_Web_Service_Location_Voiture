@@ -1,6 +1,11 @@
 const cleBrouillon = "parcAuto.contrat.brouillon";
 const cleConfirmation = "parcAuto.contrat.confirmation";
 
+const statutConnexion = document.querySelector(".rail-status");
+if (statutConnexion && sessionStorage.getItem("adminToken")) {
+  statutConnexion.hidden = false;
+}
+
 export const element = id => document.getElementById(id);
 
 export function lireBrouillon() {

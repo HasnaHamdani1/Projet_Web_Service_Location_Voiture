@@ -9,8 +9,23 @@
 </head>
 <body>
 <aside class="rail">
-  <a class="brand" href="index.html" aria-label="Parc Auto, liste des contrats"><span class="brand-mark" aria-hidden="true">P</span><span class="rail-label">PARC AUTO</span></a>
-  <nav aria-label="Module Contrat"><a href="index.html" aria-current="page">▤ <span class="rail-label">Contrats</span></a></nav>
+  <div class="rail-brand">
+    <span class="rail-brand-icon" aria-hidden="true">🚗</span>
+    <div>
+      <h2>PARC AUTO</h2>
+      <span class="rail-status" hidden>● Connecté</span>
+    </div>
+  </div>
+  <nav aria-label="Administration">
+    <ul class="rail-menu">
+      <li><a class="rail-link" href="../admin/dashboard.html"><span aria-hidden="true">▦</span> Dashboard</a></li>
+      <li><a class="rail-link" href="../admin/admin.html"><span aria-hidden="true">🚗</span> Véhicules</a></li>
+      <li><span class="rail-link" aria-disabled="true"><span aria-hidden="true">📅</span> Réservations</span></li>
+      <li class="active"><a class="rail-link" href="index.html" aria-current="location"><span aria-hidden="true">📄</span> Contrats</a></li>
+      <li><a class="rail-link" href="http://localhost:5173"><span aria-hidden="true">⬅️</span> Retours</a></li>
+      <li><span class="rail-link" aria-disabled="true"><span aria-hidden="true">⚙️</span> Paramètres</span></li>
+    </ul>
+  </nav>
 </aside>
 <main class="page">
   <header class="heading">
