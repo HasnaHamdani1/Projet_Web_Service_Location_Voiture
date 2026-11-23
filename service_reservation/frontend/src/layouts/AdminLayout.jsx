@@ -1,9 +1,9 @@
 import clsx from 'clsx'
 import { CalendarDays, Car, FileText, Globe, LogOut, Menu, Settings, Undo2, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { initials } from '../utils/format'
+import { adminDashboardUrl, initials } from '../utils/format'
 
 const env = import.meta.env
 
@@ -98,7 +98,6 @@ function NavItems({ expanded, onNavigate }) {
 
 function UserBlock({ expanded }) {
   const { user, logout } = useAuth()
-  const navigate = useNavigate()
   return (
     <div className={clsx('flex items-center', expanded ? 'gap-3' : 'flex-col gap-2')}>
       <div title={`${user?.nom} (${user?.role})`}
@@ -111,7 +110,7 @@ function UserBlock({ expanded }) {
           <p className="text-xs text-ink-muted">Administrateur</p>
         </div>
       )}
-      <button type="button" onClick={() => { logout(); navigate('/admin/connexion', { replace: true }) }} className="rounded-lg p-2 text-ink-muted hover:bg-field hover:text-danger-text" aria-label="Se déconnecter" title="Se déconnecter">
+      <button type="button" onClick={() => { logout(); window.location.assign(adminDashboardUrl()) }} className="rounded-lg p-2 text-ink-muted hover:bg-field hover:text-danger-text" aria-label="Se déconnecter" title="Se déconnecter">
         <LogOut className="h-5 w-5" />
       </button>
     </div>

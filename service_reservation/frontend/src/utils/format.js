@@ -151,3 +151,8 @@ export function periodQuery({ date_debut, date_fin, heure_debut, heure_fin }) {
   const s = q.toString()
   return s ? `?${s}` : ''
 }
+
+/** Tableau de bord administrateur du frontend commun (connexion de l'agence). */
+export function adminDashboardUrl() {
+  return import.meta.env.VITE_ADMIN_DASHBOARD_URL || `${window.location.protocol}//${window.location.hostname}:3000/admin/login.html`
+}
