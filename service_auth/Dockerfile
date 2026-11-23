@@ -6,6 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY service_auth/requirements.txt ./requirements.txt
+# Connexion lente vers PyPI : délai et nombre de tentatives de pip augmentés
+ENV PIP_DEFAULT_TIMEOUT=300 PIP_RETRIES=10
 RUN pip install --no-cache-dir -r requirements.txt \
     && addgroup --system --gid 10004 appgroup \
     && adduser --system --uid 10004 --ingroup appgroup appuser
