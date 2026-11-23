@@ -1,0 +1,19 @@
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+#root {
+  width: auto;
+  max-width: none;
+  display: block;
+  text-align: left;
+  border: none;
+}

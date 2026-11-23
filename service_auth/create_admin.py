@@ -1,3 +1,4 @@
+
 from getpass import getpass
 
 from sqlalchemy.exc import IntegrityError
@@ -12,6 +13,7 @@ def main():
     email = input("E-mail: ").strip().casefold()
     password = getpass("Mot de passe (12 caractères minimum): ")
     confirmation = getpass("Confirmer le mot de passe: ")
+
     if not nom or "@" not in email or len(password) < 12 or password != confirmation:
         raise SystemExit("Mot de passe invalide ou confirmation différente.")
 
@@ -21,15 +23,20 @@ def main():
             nom=nom,
             email=email,
             mot_de_passe=hash_password(password),
+            role="ADMINISTRATEUR",
         )
         db.add(user)
         db.flush()
+
         db.add(Administrateur(id=user.id))
         db.commit()
+
         print(f"Administrateur créé: {email}")
+
     except IntegrityError as exc:
         db.rollback()
         raise SystemExit("Cet e-mail existe déjà.") from exc
+
     finally:
         db.close()
 

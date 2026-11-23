@@ -29,3 +29,33 @@ main{max-width:1280px;margin:0 auto;padding:0 32px}
 footer{margin:85px auto 0;padding:24px max(5vw,24px);border-top:1px solid #e5ebef;display:flex;gap:10px;align-items:center;max-width:1280px;color:var(--navy);font-weight:700;font-size:.8rem}.small-mark{width:24px;height:24px;border-radius:7px 7px 7px 2px;font-size:.7rem}.footer-note{margin-left:auto;color:var(--muted);font-weight:400}.toast{position:fixed;right:22px;bottom:22px;max-width:min(380px,calc(100vw - 44px));padding:13px 16px;border-radius:11px;background:var(--navy);color:white;box-shadow:var(--shadow);transform:translateY(140%);opacity:0;transition:.25s;z-index:10;font-size:.84rem}.toast.show{transform:translateY(0);opacity:1}.toast.error{background:#9b2c2c}[hidden]{display:none!important}
 @media(max-width:900px){.hero{grid-template-columns:1.15fr .85fr}.hero-copy{padding:48px 36px}.vehicle-grid{grid-template-columns:repeat(2,1fr)}.section-heading{align-items:start;flex-direction:column;gap:9px}}
 @media(max-width:620px){main{padding:0 17px}.topbar{height:65px;padding:0 17px}.connection{display:none}.hero{margin-top:18px;min-height:540px;grid-template-columns:1fr}.hero-copy{padding:38px 25px}.hero-art{min-height:210px}.sun{width:150px;height:150px;top:4%;right:22%}.car-art{transform:scale(.73) skewX(-9deg);transform-origin:bottom right;right:9%;bottom:48px}.road{height:70px}.auth-section,.content-section,.admin-panel{margin-top:52px}.auth-grid,.vehicle-grid,.reservation-grid,.contract-grid{grid-template-columns:1fr}.panel{padding:19px}.field-row{grid-template-columns:1fr}.welcome-row{margin-top:40px}.section-heading{margin-bottom:18px}.vehicle-visual{height:135px}footer{margin-top:58px;padding:20px 17px}.footer-note{font-size:.7rem}}
+
+/* ===== Thème bleu et blanc + logo PARC AUTO ===== */
+:root{--navy:#0a2f6b;--navy-2:#123d85;--teal:#0b57d0;--teal-dark:#0842a0;--sand:#eef3fc;--paper:#f7faff;--ink:#1f2f4d;--muted:#5b6b86;--line:#d6e0f0;--orange:#dbe8ff;--shadow:0 16px 40px rgba(10,47,107,.12)}
+
+/* Logo : carré noir + voiture */
+.brand{text-transform:uppercase;letter-spacing:.01em;font-size:1.05rem}
+.brand-mark{background:#000;border-radius:10px;transform:none;height:38px;width:38px;font-size:20px}
+.small-mark{width:26px;height:26px;font-size:.9rem;border-radius:8px}
+
+/* Couleurs */
+h1 em,.hero .eyebrow{color:#bcd4ff}
+.button-light{background:#eaf1ff;color:var(--navy)}
+.button-outline{border-color:#9db9ee}
+.button-outline:hover{background:#eaf1ff}
+.form-panel input:focus,.vehicle-booking input:focus,.amount-input:focus{outline:2px solid #9db9ee}
+.role-badge{background:#e6eefc}
+.status-CONFIRMEE,.status-VALIDE{background:#dfe9fc;color:#0842a0}
+.admin-panel{border-color:#c5d5f0;background:#f8fbff}
+.vehicle-visual{background:linear-gradient(135deg,#e8f0ff,#d3e2fb)}
+.vehicle-visual:after{background:#7fa8e6}
+.vehicle-visual .wheel{border-color:#1d3f7a}
+.mini-button{border-color:#a8c0ee;background:#f6f9ff;color:#0842a0}
+.mini-button:hover{background:#e6eefc}
+
+/* Illustration de l'accueil */
+.hero-art{background:linear-gradient(142deg,#1f5fc2,#0a2f6b 70%)}
+.road{background:#071f47}
+.car-art,.car-art:before{background:#fff}
+.car-window{background:#7fa8e6}
+.wheel{border-color:#071f47;background:#c5d5f0}
