@@ -25,9 +25,11 @@ Distributed car-rental application (G9). **Everyone runs the whole platform on t
    | Authentication API | http://localhost:8004/docs | Leila |
    | Return API | http://localhost:8006/docs | Hasna |
 
-   The Return React frontend (`frontend/Retour`) runs with `npm install` then `npm run dev` (port 5173).
+   | Return frontend (React) | http://localhost:5173 | Hasna |
 
-Browser pages find the APIs on the same machine as the page (`frontend/server.py` writes `config.js`), so the same platform also works when opened from another computer (Tailscale, classroom network) with a single address to share. Set `AUTH_API_URL`, `VEHICLE_API_URL`… only to point elsewhere.
+Agency access to reservations: log in on http://localhost:3000/admin/login.html, then click **Réservations** in the menu (the admin token is passed to the booking site in `#jeton=…`).
+
+Browser pages find the APIs on the same machine as the page (`frontend/server.py` writes `config.js`), so the same platform also works when opened from another computer (classroom network) with a single address to share. Set `AUTH_API_URL`, `VEHICLE_API_URL`… only to point elsewhere.
 
 ## REST links between services
 
