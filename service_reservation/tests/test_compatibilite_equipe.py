@@ -86,3 +86,7 @@ def test_lecture_publique_desactivable(client, h_claire, monkeypatch):
     assert client.get("/reservations").status_code == 401
     assert client.get("/reservations", headers=H_SERVICE).status_code == 200
     assert client.get("/reservations", headers=h_claire).status_code == 200
+    # Le devis et le catalogue restent publics même quand la lecture publique est coupée
+    assert client.post("/reservations/devis", json={"vehicule_id": 1, "date_debut": jour(10),
+                                                    "date_fin": jour(13)}).status_code == 200
+    assert client.get("/catalogue/vehicules").status_code == 200

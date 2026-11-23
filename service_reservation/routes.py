@@ -104,8 +104,8 @@ def confirmees(acteur: Acteur | None = Depends(lecteur), svc: ServiceReservation
 
 
 @router.post("/reservations/devis", response_model=DevisOut, tags=["Réservations"],
-             summary="F002 – Calculer le prix sans enregistrer")
-def devis(body: DevisRequest, _: Acteur | None = Depends(lecteur), svc: ServiceReservation = Depends(service)):
+             summary="F002 – Calculer le prix sans enregistrer (public)")
+def devis(body: DevisRequest, svc: ServiceReservation = Depends(service)):
     return svc.devis(body.vehicule_id, body.date_debut, body.date_fin, body.assistance).en_dict()
 
 
