@@ -34,10 +34,10 @@ app = FastAPI(title="Service Authentification")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-    ],
+    # CORS_ORIGINS (liste séparée par des virgules) + frontends de l'équipe sur n'importe quelle machine :
+    # frontend commun (3000), Live Server (5500), Vite (5173).
+    allow_origins=[o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()],
+    allow_origin_regex=r"https?://[^/]+:(3000|5500|5173)",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -95,7 +95,7 @@ export default function CataloguePage() {
           </div>
           <div>
             <label htmlFor="prix" className="mb-1.5 flex justify-between text-[13px] font-medium text-ink-soft">
-              Prix maximum / jour <span className="font-semibold text-ink">{prixMax ? formatMoney(prixMax) : 'Tous'}</span>
+              Prix maximum / jour <span className="font-semibold text-ink">{prixMax ? formatMoney(prixMax, toutes.data?.[0]?.devise) : 'Tous'}</span>
             </label>
             <input id="prix" type="range" min={20} max={prixMaxCatalogue} step={5} value={prixMax || prixMaxCatalogue}
               onChange={(e) => update({ prix_max: Number(e.target.value) >= prixMaxCatalogue ? '' : e.target.value })}

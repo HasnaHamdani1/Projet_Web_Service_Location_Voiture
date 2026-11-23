@@ -219,6 +219,7 @@ class OffreVehiculeOut(VehiculeDisponibleOut):
     disponible: bool | None = Field(description="null tant qu'aucune période n'est choisie")
     duree_jours: int | None
     prix_estime: float | None = Field(description="Location sur la période, hors options")
+    devise: str
 
 
 class VehiculePublicOut(OffreVehiculeOut):

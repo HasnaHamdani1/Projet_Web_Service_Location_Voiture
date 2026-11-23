@@ -18,9 +18,10 @@ from .schemas import (
 
 app = FastAPI(title="Service Contrat", description="Création et suivi des contrats de location.", version="1.0.0")
 origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
-if origins:
-    app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=False,
-                       allow_methods=["GET", "POST", "PUT", "OPTIONS"], allow_headers=["Authorization", "Content-Type"])
+# CORS_ORIGINS + pages Contrat servies par le frontend commun (3000) ou Live Server (5500), sur n'importe quelle machine
+app.add_middleware(CORSMiddleware, allow_origins=origins, allow_origin_regex=r"https?://[^/]+:(3000|5500)",
+                   allow_credentials=False, allow_methods=["GET", "POST", "PUT", "OPTIONS"],
+                   allow_headers=["Authorization", "Content-Type"])
 
 Base.metadata.create_all(bind=engine)
 

@@ -72,7 +72,7 @@ export default function VehiclePage() {
           <VehicleImage vehicle={v} className="aspect-[16/9]" rounded="rounded-[24px]" />
           <section className="card p-6">
             <h1 className="text-[30px] font-extrabold tracking-tight">{v.libelle}</h1>
-            <p className="mt-1 text-ink-muted"><span className="text-xl font-extrabold text-ink">{formatMoney(v.prix_par_jour)}</span> / jour · TVA comprise</p>
+            <p className="mt-1 text-ink-muted"><span className="text-xl font-extrabold text-ink">{formatMoney(v.prix_par_jour, v.devise)}</span> / jour · TVA comprise</p>
             <dl className="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-3">
               {specs.map(([k, val]) => (
                 <div key={k}><dt className="label-caps">{k}</dt><dd className="mt-1 font-medium">{val}</dd></div>
