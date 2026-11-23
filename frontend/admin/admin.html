@@ -23,9 +23,9 @@
         <ul class="sidebar-menu">
             <li><a href="dashboard.html" class="sidebar-link"><span>▦</span> Dashboard</a></li>
             <li class="active"><a href="admin.html" class="sidebar-link"><span>🚗</span> Véhicules</a></li>
-            <li><a href="#" class="sidebar-link"><span>📅</span> Réservations</a></li>
-            <li><a href="../Contrat/index.html" class="sidebar-link"><span>📄</span> Contrats</a></li>
-            <li><a href="http://localhost:5173" class="sidebar-link"><span>⬅️</span> Retours</a></li>
+            <li><a href="#" class="sidebar-link" data-module="reservations"><span>📅</span> Réservations</a></li>
+            <li><a href="/Contrat/index.html" class="sidebar-link" data-module="contrats"><span>📄</span> Contrats</a></li>
+            <li><a href="#" class="sidebar-link" data-module="retours"><span>⬅️</span> Retours</a></li>
             <li><a href="#" class="sidebar-link"><span>⚙️</span> Paramètres</a></li>
         </ul>
     </aside>
@@ -209,6 +209,7 @@
 
 <!-- JavaScript -->
 <script src="/config.js"></script>
+<script src="menu.js"></script>
 <script src="./admin.js"></script>
 
 </body>
