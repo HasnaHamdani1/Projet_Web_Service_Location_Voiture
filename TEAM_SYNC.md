@@ -228,14 +228,24 @@ Implemented on `branch_maryam` and verified end to end on **one** MariaDB databa
 - Double booking is prevented under MySQL with a per-vehicle row lock (`reservation_verrous`, `SELECT ... FOR UPDATE`) and READ COMMITTED isolation; availability is per period (start inclusive, end exclusive). `MAINTENANCE` vehicles are never offered.
 - Customer names are read-only from `utilisateurs`/`clients` (`CLIENT_PROVIDER=db`) because Auth exposes no client read route. **Exception to section 3.1, to be removed** when Auth adds `GET /clients` and `GET /clients/{id}` (then set `CLIENT_PROVIDER=http`).
 
-Single shared database: status of the blocking issues (clean-volume init simulated: dump + Contract 002-005 from `service-contrat` + 006 + 007 all apply)
+Single shared database: integration branch `integration/base-unique` (main + all four members' work)
 
-1. **Fixed on this branch:** `compose.yaml` mounted a missing `./db_location_vehicules.sql` and created `db_location_vehicules` while the dump creates `db_location_voitures`. Compose now mounts `Base_de_données/db_location_voitures.sql` and every service defaults to `db_location_voitures` (`.env.example` updated). The Contract migration mounts 002-005 are commented out on this branch: on `main` they alter the old `contrat` table, which the dump does not create, so MySQL initialization would stop at 002. The Contract PR (`service-contrat`, whose migrations already target `contrats`) restores them, with `005_add_deposit_details.sql`.
-2. **Vehicle owner:** the Vehicle service maps a separate `vehicule` table and calls `create_all()`, so on the shared database it silently creates a second vehicle table; `reservations.vehicule_id` references `vehicules`, so vehicles added from the dashboard cannot be booked (Reservation answers 422 on `vehicule_id`, never 500). A ready-to-apply patch is in `service_reservation/docs/correctif-service-vehicule-base-unique.patch` (`git apply` on `fonctionnalite/admin-frontend`): maps `vehicules` (`prixParJour` ↔ `prix_par_jour`, `annee`, `administrateur_id`), no `create_all()` on MySQL, removes the duplicated half of `main.py`, adds `database/migrations/007_vehicules_image_url.sql` (mount it in Compose as `007_...`). The JSON contract (`prix_par_jour`, `image_url`) does not change. Vehicle write routes (`POST/PUT/DELETE /vehicules`, image upload) should also require an `ADMINISTRATEUR` token.
-3. **Auth owner:** `main`/`service-contrat` map `utilisateur`/`client`/`administrateur` while the dump and `fonctionnalite/admin-frontend` use the plural tables (Reservation reads the plural ones). Merge the plural version, add `GET /clients` and `GET /clients/{id}` (admin token).
-4. **Team:** currency (Reservation `DEVISE`, default `€`; the Contract frontend defaults to `MAD`).
-5. **Contract owner:** merge `service-contrat` (model on `contrats` + migrations 002-005 that apply on the dump) and restore the four Compose mounts; send a token or `X-API-Key` to Reservation so that `RESERVATION_LECTURE_PUBLIQUE` can be set to `false`; the common frontend "Réserver" entry should link to the booking site (`http://localhost:3002`).
-6. **Every Python service except Reservation (Vehicle, Auth, Contract, Return):** add `cryptography>=42` to its requirements. MySQL 8.4 (the Compose image) authenticates with `caching_sha2_password`; without `cryptography`, PyMySQL cannot complete the first full authentication over TCP (RuntimeError in `pymysql/_auth.py`), the health check fails and the services that depend on it never start.
+Done and verified end to end on one database (dump + migrations 002-007, all five APIs running together, real browser for the dashboard and the booking site): Vehicle → booking site → payment → contract → return closes the contract and resets the vehicle status. Backend tests: Reservation 46, Contract 17, Return 11 of 14 (see below), frontend 30.
+
+1. Compose: single database `db_location_voitures`, real dump path, Contract migrations 002-005 (`contrats`), Reservation 006, Vehicle 007, new `service_retour` (port 8006), Vehicle on port 8005 with its photo volume.
+2. Vehicle (Leila): maps the dump's `vehicules` (`prixParJour`, `annee`, `administrateur_id`), no `create_all` on MySQL, duplicated half of `main.py` removed, `PUT /vehicules/{id}/statut` for Return; dashboard sends `annee` and the admin id from the token.
+3. No hard-coded Tailscale IP anywhere: dashboard, admin login, Contract pages and Return frontend read `config.js` (same host as the page by default); Return calls `http://service_contrat:8000` and `http://service_vehicule:8000`.
+4. Auth (Leila's plural-table version) and Contract: CORS from `CORS_ORIGINS` plus the team's frontend ports; the admin dashboard login from port 3000 was blocked before.
+5. Contract sends `X-API-Key` (`CONTRAT_RESERVATION_API_KEY`) to Reservation; with `RESERVATION_LECTURE_PUBLIQUE=false`, reads without the key get 401.
+6. Return closes the contract with `PUT /contrats/{id}/statut` and body `{"statut": "CLOTURE"}` (it sent no body before).
+7. `cryptography>=42` added to Vehicle, Auth, Contract and Return (needed by PyMySQL with MySQL 8.4). Currency: MAD.
+
+Still to do by their owners:
+
+- **Leila:** require an `ADMINISTRATEUR` token on `POST/PUT/DELETE /vehicules` and photo upload (the dashboard already stores `adminToken`; Return will need a service key for `/statut`); add `GET /clients` and `GET /clients/{id}` to Auth (Reservation then uses `CLIENT_PROVIDER=http`); commit `frontend/images/` (the home page references `veh*.jpg`, absent from Git).
+- **Sara:** protect Contract write routes with `require_admin` (already in `auth.py`, unused); generate the Reservation key and put it in `.env` (`RESERVATION_SERVICE_API_KEYS=contrats:<key>` and `CONTRAT_RESERVATION_API_KEY=<key>`).
+- **Hasna:** update the 3 tests that target removed functions (`recupererMontantEstime`, `calculerMontantRetard` calling the real Contract API); protect write routes; add `service_retour` to the review of `compose.yaml`.
+- **Everyone:** stop sharing containers over Tailscale for development; `git pull` and `docker compose up --build` instead.
 
 ## 5. Decisions for the next team sync
 
