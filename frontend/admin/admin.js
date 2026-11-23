@@ -1,6 +1,9 @@
 
-const API_VEHICULES = "http://100.106.223.93:8005/vehicules";
-const API_BASE = new URL(API_VEHICULES).origin;
+const API_VEHICULES = window.location.hostname === "localhost"
+    ? "http://localhost:8005/vehicules"
+    : "http://100.106.223.93:8005/vehicules";
+
+const API_BASE = new URL(API_VEHICULES).origin;s
 
 const STATUTS = [
     "DISPONIBLE",
