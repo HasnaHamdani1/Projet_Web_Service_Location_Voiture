@@ -3,7 +3,7 @@ import '../styles/Sidebar.css';
 
 const ADMIN_URL =
   import.meta.env.VITE_ADMIN_URL ||
-  `http://${window.location.hostname}:5500/frontend/admin`;
+  `${window.location.protocol}//${window.location.hostname}:3000/admin`;
 
 const MENU = [
   { id: 'dashboard',    label: 'Dashboard',    icon: '▦',  href: `${ADMIN_URL}/dashboard.html` },

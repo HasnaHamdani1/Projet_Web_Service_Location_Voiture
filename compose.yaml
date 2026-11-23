@@ -197,6 +197,17 @@ services:
       - "3002:80"
     restart: unless-stopped
 
+  # Interface Retours (React, Hasna) – http://localhost:5173
+  frontend_retour:
+    build:
+      context: ./frontend/Retour
+    depends_on:
+      service_retour:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+
 volumes:
   mysql_data:
   vehicule_images:
