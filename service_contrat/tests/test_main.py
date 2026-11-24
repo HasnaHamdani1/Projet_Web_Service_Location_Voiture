@@ -1,5 +1,8 @@
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import patch
+
+import jwt
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +11,15 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 ORIGINE_FRONTEND = "http://127.0.0.1:5500"
+SECRET_TEST = "secret-de-test-service-contrat-0123456789"
+CLE_RETOUR = "cle-retours-test"
+
+
+def jeton(service: str | None, role: str = "ADMINISTRATEUR", user_id: int = 1) -> dict:
+    claims = {"sub": str(user_id), "role": role, "exp": datetime.now(timezone.utc) + timedelta(minutes=30)}
+    if service:
+        claims["service"] = service
+    return {"Authorization": f"Bearer {jwt.encode(claims, SECRET_TEST, algorithm='HS256')}"}
 
 # L'application initialise sa base dès l'import.
 with patch.dict("os.environ", {"DATABASE_URL": "sqlite://", "CORS_ORIGINS": ORIGINE_FRONTEND}):
@@ -17,7 +29,8 @@ with patch.dict("os.environ", {"DATABASE_URL": "sqlite://", "CORS_ORIGINS": ORIG
 
 @pytest.fixture
 def client_test(monkeypatch):
-    monkeypatch.setenv("CONTRAT_DEFAULT_ADMIN_ID", "1")
+    monkeypatch.setenv("JWT_SECRET", SECRET_TEST)
+    monkeypatch.setenv("CONTRAT_SERVICE_API_KEYS", f"retours:{CLE_RETOUR}")
     moteur = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
@@ -31,6 +44,8 @@ def client_test(monkeypatch):
     main.app.dependency_overrides[get_db] = obtenir_session
     try:
         with TestClient(main.app) as client:
+            # Par défaut : administrateur du service Contrat (Sara)
+            client.headers.update(jeton("CONTRAT"))
             yield client
     finally:
         main.app.dependency_overrides.pop(get_db, None)
@@ -198,3 +213,24 @@ def test_requete_cors_autorise_le_put_de_cloture(client_test):
     })
     assert reponse.status_code == 200
     assert reponse.headers["Access-Control-Allow-Origin"] == ORIGINE_FRONTEND
+
+
+def test_ecriture_refusee_sans_jeton_ou_a_un_admin_d_un_autre_service(client_test, reservation_confirmee):
+    sans_jeton = {"Authorization": ""}
+    assert client_test.post("/contrats", json={"reservation_id": 1}, headers=sans_jeton).status_code == 401
+    for service in ("VEHICULE", "RESERVATION", "RETOUR"):
+        reponse = client_test.post("/contrats", json={"reservation_id": 1}, headers=jeton(service))
+        assert reponse.status_code == 403, service
+    assert client_test.post("/contrats", json={"reservation_id": 1}, headers=jeton(None, role="CLIENT")).status_code == 403
+    # La lecture reste ouverte (service Retour, pages Contrat, tableau de bord)
+    assert client_test.get("/contrats", headers=sans_jeton).status_code == 200
+
+
+def test_cloture_par_le_service_retour_avec_sa_cle(client_test, reservation_confirmee, demande_finalisation):
+    contrat = client_test.post("/contrats/finalisation", json=demande_finalisation).json()
+    url = f"/contrats/{contrat['id']}/statut"
+    sans_jeton = {"Authorization": ""}
+    assert client_test.put(url, json={"statut": "CLOTURE"}, headers={**sans_jeton, "X-API-Key": "mauvaise"}).status_code == 401
+    reponse = client_test.put(url, json={"statut": "CLOTURE"}, headers={**sans_jeton, "X-API-Key": CLE_RETOUR})
+    assert reponse.status_code == 200
+    assert reponse.json()["statut"] == "CLOTURE"
