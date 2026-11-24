@@ -1,0 +1,105 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarRental | Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="dashboard">
+
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-icon">&#128663;</span>
+            <div>
+                <h2>PARC AUTO</h2>
+                <span class="badge-connecte">&#9679; Connect&eacute;</span>
+            </div>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="active"><a href="dashboard.html" class="sidebar-link"><span>â–¦</span> Dashboard</a></li>
+            <li><a href="admin.html" class="sidebar-link"><span>&#128663;</span> V&eacute;hicules</a></li>
+            <li><a href="#" class="sidebar-link"><span>&#128197;</span> R&eacute;servations</a></li>
+            <li><a href="../Contrat/index.html" class="sidebar-link"><span>&#128196;</span> Contrats</a></li>
+            <li><a href="http://localhost:5173" class="sidebar-link"><span>&#11013;</span> Retours</a></li>
+            <li><a href="#" class="sidebar-link"><span>&#9881;</span> Param&egrave;tres</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <p class="breadcrumb">CarRental / Administration</p>
+                <h2>Dashboard</h2>
+            </div>
+            <div class="top-admin">
+                <span class="admin-avatar">A</span>
+                <span>Administrateur</span>
+            </div>
+        </header>
+
+        <section class="welcome-section">
+            <h1>Tableau de bord</h1>
+            <p>Statistiques gÃ©nÃ©rales de votre parc automobile.</p>
+        </section>
+
+        <p id="dashboard-error" class="error-message" hidden></p>
+
+        <section class="stats-section">
+            <div class="section-heading">
+                <h2>VÃ©hicules</h2>
+            </div>
+            <div class="stats-grid">
+                <article class="stat-card">
+                    <div class="stat-icon icon-total">ðŸš˜</div>
+                    <div><p>Total vÃ©hicules</p><h2 id="total-vehicles">0</h2></div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-icon icon-available">âœ“</div>
+                    <div><p>Disponibles</p><h2 id="available-vehicles">0</h2></div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-icon icon-rented">ðŸ”‘</div>
+                    <div><p>LouÃ©s</p><h2 id="rented-vehicles">0</h2></div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-icon icon-maintenance">ðŸ”§</div>
+                    <div><p>En maintenance</p><h2 id="maintenance-vehicles">0</h2></div>
+                </article>
+            </div>
+        </section>
+
+        <section class="stats-section" style="margin-top: 38px;">
+            <div class="section-heading">
+                <h2>Retours</h2>
+            </div>
+            <div class="stats-grid">
+                <article class="stat-card">
+                    <div class="stat-icon icon-total">â†©ï¸</div>
+                    <div><p>Total retours</p><h2 id="total-retours">0</h2></div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-icon icon-available">âœ“</div>
+                    <div><p>Ã€ l'heure</p><h2 id="retours-heure">0</h2></div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-icon icon-rented">â±ï¸</div>
+                    <div><p>En retard</p><h2 id="retours-retard">0</h2></div>
+                </article>
+                <article class="stat-card">
+                    <div class="stat-icon icon-maintenance">âš ï¸</div>
+                    <div><p>Avec dommage</p><h2 id="retours-dommage">0</h2></div>
+                </article>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>

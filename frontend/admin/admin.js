@@ -1,4 +1,4 @@
-
+﻿
 const API_VEHICULES = (window.location.hostname === "localhost" ||
                        window.location.hostname === "127.0.0.1")
     ? "http://localhost:8005/vehicules"
@@ -609,4 +609,6 @@ modal.addEventListener("click", event => {
 chargerVehicules();
 
         
+
+
 

@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace client | PARC AUTO</title>
+  <link rel="stylesheet" href="client.css">
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="index.html">🚗 PARC AUTO</a>
+    <nav>
+      <a href="index.html">Accueil</a>
+      <a href="#vehicules">Véhicules</a>
+      <a href="#mes-reservations">Mes réservations</a>
+    </nav>
+    <button id="logout-button" class="button button-outline hidden">Déconnexion</button>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <p class="eyebrow">ESPACE CLIENT</p>
+      <h1>Bienvenue chez PARC AUTO</h1>
+      <p>Connectez-vous pour réserver votre prochain véhicule.</p>
+    </section>
+
+    <div id="message" class="message hidden" role="status"></div>
+
+    <section id="auth-section" class="auth-grid">
+      <article class="panel">
+        <h2>Connexion</h2>
+        <p class="muted">Vous avez déjà un compte ?</p>
+        <form id="login-form">
+          <label for="login-email">Adresse e-mail</label>
+          <input id="login-email" type="email" required autocomplete="email">
+
+          <label for="login-password">Mot de passe</label>
+          <input id="login-password" type="password" required autocomplete="current-password">
+
+          <button class="button button-primary" type="submit">Se connecter</button>
+        </form>
+      </article>
+
+      <article class="panel">
+        <h2>Créer un compte</h2>
+        <p class="muted">Rejoignez PARC AUTO.</p>
+        <form id="register-form">
+          <label for="register-name">Nom complet</label>
+          <input id="register-name" type="text" maxlength="100" required>
+
+          <label for="register-email">Adresse e-mail</label>
+          <input id="register-email" type="email" required autocomplete="email">
+
+          <label for="register-password">Mot de passe (12 caractères minimum)</label>
+          <input id="register-password" type="password" minlength="12" maxlength="128" required autocomplete="new-password">
+
+          <label for="register-phone">Téléphone (facultatif)</label>
+          <input id="register-phone" type="tel" maxlength="30">
+
+          <label for="register-address">Adresse</label>
+          <textarea id="register-address" maxlength="255" required></textarea>
+
+          <button class="button button-primary" type="submit">Créer mon compte</button>
+        </form>
+      </article>
+    </section>
+
+    <section id="client-section" class="hidden">
+      <div class="welcome-row">
+        <div>
+          <p class="eyebrow">VOTRE ESPACE</p>
+          <h2>Bonjour <span id="client-name"></span> 👋</h2>
+          <p class="muted">Choisissez votre véhicule et vos dates de location.</p>
+        </div>
+      </div>
+
+      <section id="vehicules" class="section">
+        <h2>Nos véhicules disponibles</h2>
+        <div id="vehicle-list" class="vehicle-grid">
+          <p class="muted">Chargement des véhicules...</p>
+        </div>
+      </section>
+
+      <section id="booking-section" class="panel booking-panel hidden">
+        <p class="eyebrow">NOUVELLE RÉSERVATION</p>
+        <h2>Réserver : <span id="selected-vehicle-name"></span></h2>
+        <p id="selected-vehicle-price" class="muted"></p>
+
+        <form id="booking-form" class="booking-form">
+          <div>
+            <label for="date-start">Date de début</label>
+            <input id="date-start" type="date" required>
+          </div>
+          <div>
+            <label for="date-end">Date de fin</label>
+            <input id="date-end" type="date" required>
+          </div>
+          <button class="button button-primary" type="submit">Confirmer la réservation</button>
+          <button id="cancel-selection" class="button button-outline" type="button">Annuler</button>
+        </form>
+        <p class="small-note">La réservation sera créée avec le statut EN_ATTENTE.</p>
+      </section>
+
+      <section id="mes-reservations" class="section">
+        <div class="section-heading">
+          <div>
+            <h2>Mes réservations</h2>
+            <p class="muted">Retrouvez ici vos demandes de location.</p>
+          </div>
+          <button id="refresh-reservations" class="button button-outline" type="button">Actualiser</button>
+        </div>
+        <div id="reservation-list" class="reservation-list">
+          <p class="muted">Chargement de vos réservations...</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 PARC AUTO — Location de voitures</p>
+    <a href="index.html">Retour à l'accueil</a>
+  </footer>
+
+  <script src="client.js"></script>
+</body>
+</html>

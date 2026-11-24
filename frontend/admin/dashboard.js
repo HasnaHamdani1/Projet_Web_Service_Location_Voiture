@@ -1,38 +1,62 @@
-const API_VEHICULES = "http://100.106.223.93:8005/vehicules";
-const API_RETOURS = "http://127.0.0.1:8000/retours/liste";
+﻿const HOST = window.location.hostname;
+const API_VEHICULES = `http://${HOST}:8005/vehicules`;
 
 const erreurBox = document.getElementById("dashboard-error");
 
 function afficher(id, valeur) {
-    document.getElementById(id).textContent = valeur;
+    const element = document.getElementById(id);
+    if (element) element.textContent = valeur;
 }
 
-function ajouterErreur(message) {
-    erreurBox.hidden = false;
-    erreurBox.textContent += (erreurBox.textContent ? " " : "") + message;
+function afficherBarre(id, valeur, total) {
+    const element = document.getElementById(id);
+    if (!element) return;
+
+    const pourcentage = total > 0 ? (valeur / total) * 100 : 0;
+    element.style.width = `${pourcentage}%`;
 }
 
 async function chargerVehicules() {
-    const reponse = await fetch(API_VEHICULES);
-    if (!reponse.ok) throw new Error(`Erreur HTTP ${reponse.status}`);
-    const liste = await reponse.json();
+    try {
+        const reponse = await fetch(API_VEHICULES);
 
-    afficher("total-vehicles", liste.length);
-    afficher("available-vehicles", liste.filter(v => v.statut === "DISPONIBLE").length);
-    afficher("rented-vehicles", liste.filter(v => v.statut === "LOUE").length);
-    afficher("maintenance-vehicles", liste.filter(v => v.statut === "MAINTENANCE").length);
+        if (!reponse.ok) {
+            throw new Error(`Erreur HTTP ${reponse.status}`);
+        }
+
+        const liste = await reponse.json();
+
+        if (!Array.isArray(liste)) {
+            throw new Error("Format de données invalide");
+        }
+
+        const total = liste.length;
+        const disponibles = liste.filter(v => v.statut === "DISPONIBLE").length;
+        const loues = liste.filter(v => v.statut === "LOUE").length;
+        const maintenance = liste.filter(v => v.statut === "MAINTENANCE").length;
+        const reserves = liste.filter(v => v.statut === "RESERVE").length;
+
+        afficher("total-vehicles", total);
+        afficher("available-vehicles", disponibles);
+        afficher("rented-vehicles", loues);
+        afficher("maintenance-vehicles", maintenance);
+
+        afficher("fleet-total", total);
+        afficher("fleet-available", disponibles);
+        afficher("fleet-rented", loues);
+        afficher("fleet-maintenance", maintenance);
+        afficher("fleet-reserved", reserves);
+
+        afficherBarre("bar-available", disponibles, total);
+        afficherBarre("bar-rented", loues, total);
+        afficherBarre("bar-maintenance", maintenance, total);
+        afficherBarre("bar-reserved", reserves, total);
+
+    } catch (erreur) {
+        erreurBox.hidden = false;
+        erreurBox.textContent =
+            "Impossible de charger les véhicules : " + erreur.message;
+    }
 }
 
-async function chargerRetours() {
-    const reponse = await fetch(API_RETOURS);
-    if (!reponse.ok) throw new Error(`Erreur HTTP ${reponse.status}`);
-    const liste = await reponse.json();
-
-    afficher("total-retours", liste.length);
-    afficher("retours-heure", liste.filter(r => Number(r.retard) === 0).length);
-    afficher("retours-retard", liste.filter(r => Number(r.retard) > 0).length);
-    afficher("retours-dommage", liste.filter(r => r.etat && r.etat !== "Bon état").length);
-}
-
-chargerVehicules().catch(e => ajouterErreur("Véhicules indisponibles : " + e.message + "."));
-chargerRetours().catch(e => ajouterErreur("Retours indisponibles : " + e.message + "."));
+chargerVehicules();
