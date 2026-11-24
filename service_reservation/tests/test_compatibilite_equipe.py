@@ -90,3 +90,15 @@ def test_lecture_publique_desactivable(client, h_claire, monkeypatch):
     assert client.post("/reservations/devis", json={"vehicule_id": 1, "date_debut": jour(10),
                                                     "date_fin": jour(13)}).status_code == 200
     assert client.get("/catalogue/vehicules").status_code == 200
+
+
+def test_cors_pages_de_l_equipe_depuis_un_autre_pc(client):
+    """Le frontend commun (port 3000) peut être affiché depuis le PC d'une collègue (multi-PC)."""
+    origine = "http://192.168.1.20:3000"
+    r = client.options("/reservations", headers={"Origin": origine, "Access-Control-Request-Method": "POST",
+                                                 "Access-Control-Request-Headers": "authorization,content-type"})
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == origine
+    # Une origine quelconque (autre port) reste refusée
+    r = client.options("/reservations", headers={"Origin": "http://exemple.com", "Access-Control-Request-Method": "GET"})
+    assert "access-control-allow-origin" not in r.headers

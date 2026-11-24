@@ -1,19 +1,25 @@
 # Service Réservation – PARC AUTO
 
-Responsable : Maryam OUBLAL (groupe G9). Fonctionnalités F001 → F004 du dossier de spécifications, en version « site de réservation » :
+Responsable : Maryam OUBLAL (groupe G9). Fonctionnalités F001 → F004 du dossier de spécifications.
 
-- **Site client** (type Goride) : le client choisit ses dates, compare les véhicules du **service Véhicule**, réserve, paie (paiement simulé) et suit ses réservations.
-- **Espace agence** (`/admin`) : l'administrateur **consulte et gère** les réservations faites sur le site (confirmation d'un paiement au comptoir, annulation, export CSV). Il ne crée ni ne modifie de réservation. **Pas d'écran de connexion ici** : l'admin se connecte dans le tableau de bord du frontend commun (http://localhost:3000/admin/login.html), dont le menu « Réservations » ouvre cet espace avec son jeton (`/admin/reservations#jeton=…`, vérifié auprès de service_auth).
+**Décision d'équipe :** les écrans utilisés sont ceux du frontend commun de Leila : l'espace client `frontend/client.html` et la page agence `frontend/admin/reservations.html`. Ils appellent directement cette API. Le frontend React de `service_reservation/frontend/` reste dans le dépôt, avec ses tests, mais n'est plus lancé par les fichiers compose.
+
+- **Client** (jeton `CLIENT`) : réserve un véhicule du **service Véhicule**. Le prix est calculé par le serveur. Paiement simulé, annulation avant le départ, liste de ses réservations.
+- **Agence** (jeton `ADMINISTRATEUR`) : consulte et gère les réservations (confirmation d'un paiement au comptoir, annulation avec motif, export CSV). Elle ne crée ni ne modifie de réservation.
+- **Services** (`X-API-Key`) : le service Contrat lit les réservations confirmées.
 - **Une seule base** : `db_location_voitures` (dump `Base_de_données/db_location_voitures.sql`), partagée par tous les services.
 
 ```text
-Navigateur ─► frontend_reservation (nginx, port 3002)
-               ├─ /api/reservation/* ─► service_reservation (8002) ─┐
-               ├─ /api/auth/*        ─► service_auth (8004)         │  GET /vehicules (HTTP)
-               └─ /api/vehicule/*    ─► service_vehicule (8005) ◄───┘  photos /uploads/…
-                                              │
-                         MySQL : db_location_voitures (base UNIQUE)
+Navigateur ─► frontend commun (Leila, port 3000) : client.html, admin/reservations.html
+                 │  Authorization: Bearer <jeton service_auth>
+                 ▼
+              service_reservation (8002) ──GET /vehicules──► service_vehicule (8005)
+                 ▲  X-API-Key                                   │
+              service_contrat (8003)                            │
+                 └──────────── MySQL db_location_voitures (base UNIQUE) ◄───┘
 ```
+
+Lancement seul sur le PC de Maryam (mode multi-PC) : `docker compose -f compose.maryam.yaml up -d --build`, voir `docs/MULTI_PC.md`.
 
 | Données | Propriétaire | Accès du service Réservation |
 |---|---|---|
@@ -73,7 +79,7 @@ Erreurs : `{"detail", "code", "erreurs": [{"champ", "message"}]}` – 401, 403, 
 ```powershell
 # Depuis la racine du dépôt (copier .env.example en .env et remplir les secrets)
 docker compose up --build
-# Site : http://localhost:3002   Espace agence : http://localhost:3002/admin   API : http://localhost:8002/docs
+# API : http://localhost:8002/docs   Écrans : http://localhost:3000/client.html et /admin/reservations.html
 docker compose exec service_auth python -m service_auth.create_admin   # premier administrateur
 ```
 

@@ -34,14 +34,15 @@ app = FastAPI(
     ),
 )
 
-if settings.cors_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-API-Key"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX or None,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-API-Key"],
+    expose_headers=["X-Total-Count", "X-Total-Pages", "Content-Disposition"],
+)
 
 installer_gestionnaires(app)
 app.include_router(router)

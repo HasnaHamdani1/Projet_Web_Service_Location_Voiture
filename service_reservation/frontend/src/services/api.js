@@ -6,8 +6,10 @@ export const USER_KEY = 'parcauto.reservation.user'
 function instance(baseURL) {
   const client = axios.create({ baseURL, timeout: 15000, headers: { 'Content-Type': 'application/json' } })
   client.interceptors.request.use((config) => {
+    // Un jeton passé explicitement (ex. jeton admin transmis par le tableau de bord) n'est jamais
+    // remplacé par la session déjà enregistrée dans ce navigateur (client, ou session expirée).
     const token = localStorage.getItem(TOKEN_KEY)
-    if (token) config.headers.Authorization = `Bearer ${token}`
+    if (token && !config.headers.Authorization) config.headers.Authorization = `Bearer ${token}`
     return config
   })
   client.interceptors.response.use(

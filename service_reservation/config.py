@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     LECTURE_PUBLIQUE: bool = True
 
     CORS_ORIGINS: str = ""
+    # Pages de l'équipe affichées depuis n'importe quel PC : frontend commun (3000), Live Server (5500), Vite (5173)
+    CORS_ORIGIN_REGEX: str = r"https?://[^/]+:(3000|5500|5173)"
     LOG_LEVEL: str = "INFO"
     APP_TIMEZONE: str = "Africa/Casablanca"
 

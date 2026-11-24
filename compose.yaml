@@ -1,3 +1,7 @@
+# PARC AUTO – toute la plateforme sur UN seul PC (branche main) :
+#   docker compose up -d --build
+# Un service par PC : voir compose.leila.yaml, compose.maryam.yaml, compose.sara.yaml,
+# compose.hasna.yaml et docs/MULTI_PC.md.
 services:
   mysql:
     image: mysql:8.4.13
@@ -151,10 +155,8 @@ services:
 
   frontend:
     build: ./frontend
-    # Adresses des API calculées dans le navigateur (hôte de la page + port publié) ;
-    # renseigner AUTH_API_URL, VEHICLE_API_URL… seulement pour pointer ailleurs.
-    environment:
-      BOOKING_SITE_URL: ${BOOKING_SITE_URL:-}
+    # Accueil, espace client, administration (véhicules, réservations), pages Contrat.
+    # Adresses des API calculées dans le navigateur (hôte de la page + port publié).
     depends_on:
       service_auth:
         condition: service_healthy
@@ -172,31 +174,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
-    restart: unless-stopped
-
-  # Site de réservation client + espace agence (React, F001–F004) – http://localhost:3002
-  # L'agence y arrive depuis le menu « Réservations » du tableau de bord (jeton dans l'ancre #jeton=…)
-  frontend_reservation:
-    build:
-      context: ./service_reservation/frontend
-      args:
-        VITE_MODULE_VEHICULES_URL: http://localhost:3000/admin/dashboard.html
-        VITE_MODULE_CONTRATS_URL: http://localhost:3000/Contrat/index.html
-        VITE_MODULE_RETOURS_URL: http://localhost:5173/
-        VITE_ADMIN_DASHBOARD_URL: http://localhost:3000/admin/login.html
-    environment:
-      RESERVATION_API_UPSTREAM: http://service_reservation:8000
-      AUTH_API_UPSTREAM: http://service_auth:8000
-      VEHICLE_API_UPSTREAM: http://service_vehicule:8000
-    depends_on:
-      service_reservation:
-        condition: service_healthy
-      service_auth:
-        condition: service_healthy
-      service_vehicule:
-        condition: service_healthy
-    ports:
-      - "3002:80"
     restart: unless-stopped
 
   # Interface Retours (React, Hasna) – http://localhost:5173

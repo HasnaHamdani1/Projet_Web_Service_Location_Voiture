@@ -1,0 +1,31 @@
+# PARC AUTO – PC de Maryam (mode multi-PC) : API du service Réservation
+#   docker compose -f compose.maryam.yaml up -d --build
+# Port à ouvrir dans le pare-feu de ce PC : 8002.
+# La base est sur le PC de Hasna ; les adresses des autres PC viennent du fichier .env.
+name: parc-auto-maryam
+
+services:
+  service_reservation:
+    build:
+      context: .
+      dockerfile: service_reservation/Dockerfile
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}@${IP_HASNA:?Set IP_HASNA in .env}:3306/${MYSQL_DATABASE:-db_location_voitures}
+      VEHICLE_SERVICE_URL: http://${IP_LEILA:?Set IP_LEILA in .env}:8005
+      AUTH_SERVICE_URL: http://${IP_LEILA:?Set IP_LEILA in .env}:8004
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      SERVICE_API_KEYS: ${RESERVATION_SERVICE_API_KEYS:-}
+      LECTURE_PUBLIQUE: ${RESERVATION_LECTURE_PUBLIQUE:-true}
+      CLIENT_PROVIDER: db
+      DEVISE: ${DEVISE:-MAD}
+      EMAIL_BACKEND: ${RESERVATION_EMAIL_BACKEND:-console}
+    ports:
+      - "8002:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
