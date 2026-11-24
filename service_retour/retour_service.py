@@ -217,6 +217,13 @@ class RetourService:
         # 6. Finaliser le retour en clôturant le contrat
     def finaliserRetour(self, contrat_id: int) -> dict:
 
+        # Reprise après un essai interrompu : un contrat déjà clôturé n'est pas une erreur
+        try:
+            if self.obtenirContrat(contrat_id).get("statut") == "CLOTURE":
+                return {"message": "Contrat déjà clôturé."}
+        except ValueError:
+            pass
+
         url = f"{self.contrat_api_url}/contrats/{contrat_id}/statut"
         derniere_reponse = None
 
@@ -266,11 +273,12 @@ class RetourService:
         except ValueError:
             raise ValueError("État du véhicule invalide.")
 
-        # Déterminer le statut selon l'état constaté
-        if etat == EtatVehicule.BON:
-            nouveauStatut = "DISPONIBLE"
-        else:
+        # Après le retour, le véhicule redevient DISPONIBLE (bon état ou léger dommage) ;
+        # un dommage important l'envoie en MAINTENANCE avant toute nouvelle location.
+        if etat == EtatVehicule.DOMMAGE_IMPORTANT:
             nouveauStatut = "MAINTENANCE"
+        else:
+            nouveauStatut = "DISPONIBLE"
 
         # Récupérer le véhicule associé au contrat
         details = self.recupererDetailsReservationParContrat(contrat_id)

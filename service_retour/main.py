@@ -396,41 +396,9 @@ def traiter_retour(
         except (ValueError, TypeError) as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    # 7. Enregistrer le retour dans la base de données
-    try:
-        db.add(nouveau_retour)
-        db.commit()
-        db.refresh(nouveau_retour)
-
-    except IntegrityError as e:
-        db.rollback()
-        print("ERREUR INSERT RETOUR :", e.orig, flush=True)
-
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Impossible d'enregistrer le retour : "
-                "contrat déjà associé à un retour "
-                "ou référence inexistante. "
-                f"[Détail MySQL : {e.orig}]"
-            )
-        )
-
-    # 8. Clôturer le contrat
-    try:
-        retour_service.finaliserRetour(retour_data.contrat_id)
-
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=502,
-            detail=(
-                "Retour enregistré dans la base de données, "
-                "mais la clôture du contrat a échoué : "
-                + str(e)
-            )
-        )
-
-    # 9. Vérifier et mettre à jour le statut du véhicule
+    # 7. Mettre à jour le statut du véhicule (DISPONIBLE, ou MAINTENANCE si dommage important).
+    #    Les appels aux autres services passent AVANT l'insertion du retour : l'insertion verrouille
+    #    la ligne du contrat (clé étrangère) et bloquerait sa clôture par le service Contrat.
     try:
         retour_service.mettreAJourStatutVehicule(
             retour_data.contrat_id,
@@ -441,9 +409,41 @@ def traiter_retour(
         raise HTTPException(
             status_code=502,
             detail=(
-                "Retour enregistré et contrat clôturé, "
-                "mais la mise à jour du véhicule a échoué : "
-                + str(e)
+                "Retour non enregistré : la mise à jour du véhicule a échoué. "
+                + ("Clé refusée : vérifiez RETOUR_VEHICULE_API_KEY et VEHICULE_SERVICE_API_KEYS dans .env. "
+                   if "401" in str(e) else "Corrigez le problème puis recommencez. ") + str(e)
+            )
+        )
+
+    # 8. Clôturer le contrat (VALIDE → CLOTURE)
+    try:
+        retour_service.finaliserRetour(retour_data.contrat_id)
+
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Retour non enregistré : la clôture du contrat a échoué. "
+                + ("Clé refusée : vérifiez RETOUR_CONTRAT_API_KEY et CONTRAT_SERVICE_API_KEYS dans .env. "
+                   if "401" in str(e) else "Corrigez le problème puis recommencez. ") + str(e)
+            )
+        )
+
+    # 9. Véhicule et contrat à jour : le retour est enregistré
+    try:
+        db.add(nouveau_retour)
+        db.commit()
+        db.refresh(nouveau_retour)
+
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Impossible d'enregistrer le retour : "
+                "contrat déjà associé à un retour "
+                "ou référence inexistante. "
+                f"[Détail MySQL : {e.orig}]"
             )
         )
 
