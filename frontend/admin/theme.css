@@ -1,0 +1,362 @@
+/* PARC AUTO – thème commun de l'espace agence (pages admin, pages Contrat).
+   Chargé APRÈS la feuille de chaque page : il harmonise la barre latérale, l'en-tête,
+   les boutons, les tableaux et les statuts des quatre services, sans toucher à leur contenu. */
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+
+:root {
+    --pa-encre: #0e2a4d;      /* textes et titres */
+    --pa-bleu: #1d5fd1;       /* actions, élément actif */
+    --pa-bleu-fonce: #174bb0;
+    --pa-bleu-clair: #eaf2ff; /* fond de l'élément actif */
+    --pa-fond: #f4f7fb;       /* fond des pages */
+    --pa-trait: #e2e8f1;      /* bordures */
+    --pa-gris: #5b6b80;       /* textes secondaires */
+    --pa-blanc: #ffffff;
+    --pa-police: "Manrope", "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+    font-family: var(--pa-police);
+    background: var(--pa-fond);
+    color: var(--pa-encre);
+    font-variant-numeric: tabular-nums;
+}
+
+body button,
+body input,
+body select,
+body textarea {
+    font-family: inherit;
+}
+
+/* ---------- Barre latérale (pages admin : .sidebar, pages Contrat : .rail) ---------- */
+body .sidebar,
+body .rail {
+    width: 248px;
+    padding: 22px 16px 16px;
+    background: var(--pa-blanc);
+    border-right: 1px solid var(--pa-trait);
+    display: flex;
+    flex-direction: column;
+    font-family: var(--pa-police);
+}
+
+body .sidebar-brand,
+body .rail-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 8px 22px;
+    margin: 0 0 14px;
+    border-bottom: 1px solid var(--pa-trait);
+}
+
+body .brand-icon,
+body .rail-brand-icon {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: var(--pa-bleu);
+    box-shadow: none;
+    font-size: 19px;
+}
+
+body .sidebar-brand > div,
+body .rail-brand > div {
+    display: block;
+}
+
+body .sidebar-brand h2,
+body .rail-brand h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: var(--pa-encre);
+    white-space: nowrap;
+}
+
+body .badge-connecte,
+body .rail-status {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pa-gris);
+}
+
+body .menu-label {
+    margin: 0 0 8px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--pa-gris);
+}
+
+body .sidebar-menu,
+body .rail-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+}
+
+body .sidebar-menu li,
+body .rail-menu li {
+    margin: 0;
+    border-radius: 10px;
+    background: transparent;
+}
+
+body .sidebar-link,
+body .rail-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: var(--pa-encre);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+body .sidebar-link span,
+body .rail-link span {
+    width: 20px;
+    text-align: center;
+    font-size: 15px;
+}
+
+body .sidebar-menu li:hover,
+body .rail-menu li:hover {
+    background: var(--pa-fond);
+}
+
+body .sidebar-menu li.active,
+body .rail-menu li.active {
+    background: var(--pa-bleu-clair);
+    box-shadow: inset 3px 0 0 var(--pa-bleu);
+}
+
+body .sidebar-menu li.active .sidebar-link,
+body .rail-menu li.active .rail-link {
+    color: var(--pa-bleu);
+    background: transparent;
+}
+
+body .rail-link[aria-disabled="true"] {
+    color: var(--pa-gris);
+}
+
+body .sidebar-footer {
+    display: none;
+}
+
+/* Carte de l'administrateur connecté + déconnexion (ajoutée par menu.js) */
+.pa-admin {
+    margin-top: auto;
+    padding: 14px 10px 4px;
+    border-top: 1px solid var(--pa-trait);
+}
+
+.pa-admin-identite {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.pa-admin-initiales {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--pa-bleu-clair);
+    color: var(--pa-bleu);
+    font-weight: 800;
+    font-size: 14px;
+}
+
+.pa-admin-nom {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--pa-encre);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pa-admin-service {
+    margin: 1px 0 0;
+    font-size: 12px;
+    color: var(--pa-gris);
+}
+
+.pa-deconnexion {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border: 1px solid var(--pa-trait);
+    border-radius: 10px;
+    background: var(--pa-blanc);
+    color: var(--pa-encre);
+    font: 600 13px var(--pa-police);
+    cursor: pointer;
+}
+
+.pa-deconnexion:hover {
+    border-color: #f1c4bf;
+    background: #fdf1f0;
+    color: #b42318;
+}
+
+.pa-deconnexion:focus-visible,
+body .sidebar-link:focus-visible,
+body .rail-link:focus-visible {
+    outline: 2px solid var(--pa-bleu);
+    outline-offset: 2px;
+}
+
+/* ---------- En-tête des pages ---------- */
+body .topbar {
+    border-bottom: 1px solid var(--pa-trait);
+}
+
+body .breadcrumb {
+    font-size: 13px;
+    color: var(--pa-gris);
+}
+
+body .topbar h2,
+body .page-heading h1,
+body .page h1 {
+    color: var(--pa-encre);
+    letter-spacing: -0.01em;
+}
+
+body .admin-avatar {
+    background: var(--pa-bleu-clair);
+    color: var(--pa-bleu);
+}
+
+/* ---------- Boutons : une seule couleur d'action ---------- */
+body .btn-primary,
+body .button.primary,
+body #add-vehicle-btn,
+body #save-vehicle-btn,
+body .refresh-button,
+body #login-button {
+    background: var(--pa-bleu);
+    border-color: var(--pa-bleu);
+    color: var(--pa-blanc);
+}
+
+body .btn-primary:hover,
+body .button.primary:hover,
+body #add-vehicle-btn:hover,
+body #save-vehicle-btn:hover,
+body .refresh-button:hover,
+body #login-button:hover {
+    background: var(--pa-bleu-fonce);
+    border-color: var(--pa-bleu-fonce);
+}
+
+/* ---------- Tableaux : en-têtes lisibles, sans majuscules ---------- */
+body table th {
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pa-gris);
+}
+
+body table td {
+    color: var(--pa-encre);
+}
+
+/* ---------- Statuts (couleur réservée à l'état) ---------- */
+body .status-badge {
+    display: inline-block;
+    text-transform: lowercase;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+body .status-badge::first-letter {
+    text-transform: uppercase;
+}
+
+body .status-disponible { background: #e6f6ee; color: #138a4e; }
+body .status-reserve { background: var(--pa-bleu-clair); color: var(--pa-bleu); }
+body .status-loue { background: #fff3de; color: #a15c00; }
+body .status-maintenance { background: #fdecea; color: #b42318; }
+
+/* Étiquettes en minuscules (pages Contrat, tableau de bord) */
+body .stat h2,
+body .section h2,
+body .live-indicator {
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* ---------- Page Véhicules ---------- */
+body .photo-vehicule,
+body .photo-vide {
+    width: 64px;
+    height: 44px;
+    margin-right: 12px;
+    border-radius: 8px;
+    vertical-align: middle;
+    object-fit: cover;
+}
+
+body .photo-vide {
+    display: inline-grid;
+    place-items: center;
+    background: var(--pa-fond);
+    border: 1px dashed var(--pa-trait);
+    font-size: 18px;
+    opacity: 0.8;
+}
+
+/* Messages vides : pas de bande blanche au-dessus du tableau */
+body .message:empty,
+body .error-message:empty {
+    display: none;
+}
+
+@media (max-width: 860px) {
+    body .sidebar,
+    body .rail {
+        width: 100%;
+        min-height: auto;
+        position: relative;
+    }
+    .pa-admin {
+        margin-top: 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body .sidebar-link,
+    body .rail-link {
+        transition: none;
+    }
+}

@@ -6,6 +6,7 @@
     <title>CarRental | Tableau de bord</title>
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="/admin/theme.css">
 </head>
 <body>
 <div class="dashboard">
@@ -14,11 +15,11 @@
             <span class="brand-icon">&#128663;</span>
             <div>
                 <h2>PARC AUTO</h2>
-                <span class="badge-connecte">&#9679; Connecté</span>
+                <span class="badge-connecte">Espace agence</span>
             </div>
         </div>
 
-        <p class="menu-label">MENU PRINCIPAL</p>
+        <p class="menu-label">Menu</p>
         <ul class="sidebar-menu">
             <li class="active">
                 <a href="dashboard.html" class="sidebar-link" data-module="dashboard">
@@ -45,38 +46,27 @@
                     <span>&#8617;</span> Retours
                 </a>
             </li>
-            <li>
-                <a href="#" class="sidebar-link">
-                    <span>&#9881;</span> Paramètres
-                </a>
-            </li>
         </ul>
-
-        <div class="sidebar-footer">
-            <span class="footer-dot"></span>
-            Système opérationnel
-        </div>
     </aside>
 
     <main class="main-content">
         <header class="topbar">
             <div>
-                <p class="breadcrumb">CarRental / Administration</p>
+                <p class="breadcrumb">PARC AUTO / Espace agence</p>
                 <h2>Tableau de bord</h2>
             </div>
             <div class="top-admin">
                 <div class="admin-avatar">A</div>
                 <div class="admin-info">
-                    <strong>Administrateur</strong>
-                    <span>Espace de gestion</span>
+                    <strong data-admin-nom>Administrateur</strong>
+                    <span data-admin-service>Espace agence</span>
                 </div>
             </div>
         </header>
 
         <section class="welcome-section">
             <div>
-                <span class="eyebrow">VUE D'ENSEMBLE</span>
-                <h1>Bienvenue dans votre espace</h1>
+                <h1 data-admin-bienvenue>Bienvenue dans votre espace</h1>
                 <p>Suivez et gérez votre parc automobile en un seul endroit.</p>
             </div>
             <a class="refresh-btn" href="dashboard.html">
@@ -92,14 +82,13 @@
                     <h2>Statistiques du parc</h2>
                     <p>Situation actuelle de votre flotte automobile</p>
                 </div>
-                <span class="live-indicator">DONNÉES EN DIRECT</span>
+                <span class="live-indicator">Mis à jour en direct</span>
             </div>
 
             <div class="stats-grid">
                 <article class="stat-card total-card">
                     <div class="stat-top">
                         <span class="stat-icon">&#128663;</span>
-                        <span class="stat-tag">GLOBAL</span>
                     </div>
                     <p>Total véhicules</p>
                     <h2 id="total-vehicles">—</h2>
@@ -109,7 +98,6 @@
                 <article class="stat-card available-card">
                     <div class="stat-top">
                         <span class="stat-icon">&#10003;</span>
-                        <span class="stat-tag">DISPONIBLE</span>
                     </div>
                     <p>Disponibles</p>
                     <h2 id="available-vehicles">—</h2>
@@ -119,7 +107,6 @@
                 <article class="stat-card rented-card">
                     <div class="stat-top">
                         <span class="stat-icon">&#128652;</span>
-                        <span class="stat-tag">LOCATION</span>
                     </div>
                     <p>Loués</p>
                     <h2 id="rented-vehicles">—</h2>
@@ -129,7 +116,6 @@
                 <article class="stat-card maintenance-card">
                     <div class="stat-top">
                         <span class="stat-icon">&#128295;</span>
-                        <span class="stat-tag">ENTRETIEN</span>
                     </div>
                     <p>En maintenance</p>
                     <h2 id="maintenance-vehicles">—</h2>

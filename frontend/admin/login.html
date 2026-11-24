@@ -1,143 +1,197 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CarRental | Connexion administrateur</title>
-
+    <title>Connexion agence - PARC AUTO</title>
+    <link rel="stylesheet" href="/admin/theme.css">
     <style>
-        * {
-            box-sizing: border-box;
+        body {
             margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(420px, 1fr);
+            background: var(--pa-blanc);
         }
 
-        body {
-            min-height: 100vh;
+        .login-visuel {
+            position: relative;
+            background: #081a36 url("/images/veh1.jpg") center / cover no-repeat;
+        }
+
+        .login-visuel::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(8, 26, 54, 0.15) 40%, rgba(8, 26, 54, 0.85));
+        }
+
+        .login-visuel p {
+            position: absolute;
+            left: 48px;
+            right: 48px;
+            bottom: 44px;
+            z-index: 1;
+            margin: 0;
+            max-width: 30ch;
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .login-zone {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 48px clamp(32px, 7vw, 96px);
+        }
+
+        .login-marque {
             display: flex;
             align-items: center;
-            justify-content: center;
-            background: #f3f5f9;
+            gap: 12px;
+            margin-bottom: 48px;
+            color: var(--pa-encre);
+            font-size: 17px;
+            font-weight: 800;
+            text-decoration: none;
         }
 
-        .login-card {
-            width: 90%;
-            max-width: 420px;
-            padding: 40px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
-        }
-
-        .brand {
-            text-align: center;
-            color: #172554;
-            font-size: 25px;
-            font-weight: bold;
-            margin-bottom: 12px;
+        .login-marque span {
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            border-radius: 11px;
+            background: var(--pa-bleu);
+            font-size: 19px;
         }
 
         h1 {
-            text-align: center;
-            color: #172554;
-            font-size: 22px;
-            margin-bottom: 10px;
+            margin: 0 0 8px;
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--pa-encre);
         }
 
         .description {
-            text-align: center;
-            color: #64748b;
-            margin-bottom: 30px;
-            font-size: 14px;
+            margin: 0 0 32px;
+            max-width: 42ch;
+            color: var(--pa-gris);
+            font-size: 15px;
+            line-height: 1.55;
+        }
+
+        #login-form {
+            max-width: 400px;
         }
 
         label {
             display: block;
-            margin: 16px 0 8px;
-            color: #334155;
-            font-weight: bold;
+            margin-bottom: 6px;
             font-size: 14px;
+            font-weight: 600;
+            color: var(--pa-encre);
         }
 
         input {
             width: 100%;
-            padding: 13px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            box-sizing: border-box;
+            margin-bottom: 18px;
+            padding: 12px 14px;
+            border: 1px solid var(--pa-trait);
+            border-radius: 10px;
             font-size: 15px;
+            color: var(--pa-encre);
+            background: var(--pa-blanc);
         }
 
         input:focus {
-            outline: 2px solid #93c5fd;
-            border-color: #2563eb;
+            outline: none;
+            border-color: var(--pa-bleu);
+            box-shadow: 0 0 0 3px var(--pa-bleu-clair);
         }
 
-        button {
+        #login-button {
             width: 100%;
-            margin-top: 24px;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            background: #172554;
-            color: white;
+            margin-top: 6px;
+            padding: 13px;
+            border: 0;
+            border-radius: 10px;
             font-size: 15px;
-            font-weight: bold;
+            font-weight: 700;
             cursor: pointer;
         }
 
-        button:hover {
-            background: #243b75;
+        #login-button:focus-visible {
+            outline: 2px solid var(--pa-encre);
+            outline-offset: 2px;
         }
 
-        button:disabled {
-            opacity: 0.6;
+        #login-button:disabled {
+            opacity: 0.7;
             cursor: wait;
         }
 
         #error-message {
-            color: #dc2626;
+            min-height: 20px;
+            margin: 14px 0 0;
+            color: #b42318;
             font-size: 14px;
-            margin-top: 15px;
-            text-align: center;
+        }
+
+        .retour-site {
+            display: inline-block;
+            margin-top: 36px;
+            color: var(--pa-bleu);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .retour-site:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 860px) {
+            body {
+                grid-template-columns: 1fr;
+            }
+            .login-visuel {
+                display: none;
+            }
         }
     </style>
 </head>
 
 <body>
-    <main class="login-card">
-        <div class="brand">CARRENTAL</div>
+    <div class="login-visuel" aria-hidden="true">
+        <p>Votre flotte, vos réservations, vos contrats et vos retours au même endroit.</p>
+    </div>
 
-        <h1>Connexion administrateur</h1>
+    <main class="login-zone">
+        <a class="login-marque" href="/"><span aria-hidden="true">&#128663;</span> PARC AUTO</a>
 
+        <h1>Connexion à l'espace agence</h1>
         <p class="description">
-            Connectez-vous pour accéder à votre espace d'administration.
+            Chaque administrateur accède au service dont il a la charge&nbsp;: véhicules, réservations, contrats ou retours.
         </p>
 
         <form id="login-form">
-            <label for="username">Identifiant</label>
-            <input
-                type="text"
-                id="username"
-                autocomplete="username"
-                required
-            >
+            <label for="username">Adresse e-mail</label>
+            <input type="email" id="username" autocomplete="username" placeholder="prenom@parcauto.ma" required>
 
             <label for="password">Mot de passe</label>
-            <input
-                type="password"
-                id="password"
-                autocomplete="current-password"
-                required
-            >
+            <input type="password" id="password" autocomplete="current-password" required>
 
-            <button type="submit" id="login-button">
-                Se connecter
-            </button>
+            <button type="submit" id="login-button">Se connecter</button>
 
             <p id="error-message" role="alert"></p>
         </form>
+
+        <a class="retour-site" href="/">Retour au site PARC AUTO</a>
     </main>
 
     <script src="/config.js"></script>
