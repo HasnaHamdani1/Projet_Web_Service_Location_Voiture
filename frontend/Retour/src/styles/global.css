@@ -4,14 +4,14 @@
   --text: #111418;
   --muted: #5f6672;
   --border: #d9dde3;
-  --primary: #0b57d0;
+  --primary: #1d5fd1;
   --danger: #b91c1c;
   --warn: #b45309;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
 }

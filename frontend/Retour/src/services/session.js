@@ -43,7 +43,16 @@ export function entetesAuth(extra = {}) {
   return { ...extra, Authorization: `Bearer ${jetonAdmin() || ''}` };
 }
 
+// Déconnexion : jeton effacé, retour à la page d'accueil du site (frontend commun)
 export function deconnecter() {
   sessionStorage.removeItem(CLE);
-  window.location.href = `${ADMIN_URL}/login.html`;
+  window.location.href = `${new URL(ADMIN_URL).origin}/`;
+}
+
+// Profil de l'administrateur (nom) auprès du service Auth, sur la même machine que le frontend commun
+export async function profilAdmin() {
+  const auth = import.meta.env.VITE_AUTH_API_URL || `${new URL(ADMIN_URL).protocol}//${new URL(ADMIN_URL).hostname}:8004`;
+  const reponse = await fetch(`${auth}/auth/me`, { headers: entetesAuth() });
+  if (!reponse.ok) throw new Error(`Auth ${reponse.status}`);
+  return reponse.json();
 }
