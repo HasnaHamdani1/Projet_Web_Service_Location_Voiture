@@ -52,6 +52,17 @@ def client_test(monkeypatch):
         moteur.dispose()
 
 
+VEHICULES_LOUES = []
+
+
+@pytest.fixture(autouse=True)
+def faux_service_vehicule(monkeypatch):
+    """Aucun appel réseau : on enregistre les véhicules passés en LOUE."""
+    VEHICULES_LOUES.clear()
+    monkeypatch.setattr(main.metier_contrat.vehicule_client, "marquer_loue",
+                        lambda vehicule_id: VEHICULES_LOUES.append(vehicule_id) or True)
+
+
 @pytest.fixture
 def reservation_confirmee(monkeypatch):
     reservation = {
@@ -234,3 +245,8 @@ def test_cloture_par_le_service_retour_avec_sa_cle(client_test, reservation_conf
     reponse = client_test.put(url, json={"statut": "CLOTURE"}, headers={**sans_jeton, "X-API-Key": CLE_RETOUR})
     assert reponse.status_code == 200
     assert reponse.json()["statut"] == "CLOTURE"
+
+
+def test_le_vehicule_passe_en_loue_a_la_creation_du_contrat(client_test, reservation_confirmee, demande_finalisation):
+    assert client_test.post("/contrats/finalisation", json=demande_finalisation).status_code == 201
+    assert VEHICULES_LOUES == [reservation_confirmee["vehicule_id"]]
