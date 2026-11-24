@@ -1,10 +1,6 @@
-﻿
-const API_VEHICULES = (window.location.hostname === "localhost" ||
-                       window.location.hostname === "127.0.0.1")
-    ? "http://localhost:8005/vehicules"
-    : "http://100.112.66.13:8005/vehicules";
 
-
+// Adresse du service Véhicule : config.js (frontend/server.py), même machine que la page par défaut
+const API_VEHICULES = `${window.APP_CONFIG?.vehicle || `${location.protocol}//${location.hostname}:8005`}/vehicules`;
 const API_BASE = new URL(API_VEHICULES).origin;
 
 const STATUTS = [
@@ -37,6 +33,18 @@ function echapperHTML(valeur) {
         '"': "&quot;",
         "'": "&#039;"
     })[caractere]);
+}
+
+
+// Identifiant de l'administrateur connecté (champ "sub" du jeton du service Auth)
+function idAdministrateur() {
+    try {
+        const jeton = sessionStorage.getItem("adminToken");
+        const payload = JSON.parse(atob(jeton.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        return Number(payload.sub);
+    } catch {
+        return null;
+    }
 }
 
 
@@ -246,6 +254,9 @@ async function ouvrirFormulaireModification(id) {
         document.getElementById("modele").value =
             vehicule.modele;
 
+        document.getElementById("annee").value =
+            vehicule.annee ?? "";
+
         document.getElementById("prix_par_jour").value =
             vehicule.prix_par_jour;
 
@@ -301,6 +312,7 @@ async function enregistrerVehicule(event) {
         immatriculation: document.getElementById("immatriculation").value.trim(),
         marque: document.getElementById("marque").value.trim(),
         modele: document.getElementById("modele").value.trim(),
+        annee: Number(document.getElementById("annee").value),
         prix_par_jour: prix,
         statut: document.getElementById("statut").value
     };
@@ -315,6 +327,11 @@ async function enregistrerVehicule(event) {
         !donnees.modele
     ) {
         afficherNotification("Veuillez remplir tous les champs.");
+        return;
+    }
+
+    if (!Number.isInteger(donnees.annee) || donnees.annee < 1950 || donnees.annee > 2100) {
+        afficherNotification("Indiquez une année valide (ex : 2023).");
         return;
     }
 
@@ -360,11 +377,11 @@ async function enregistrerVehicule(event) {
 
         } else {
 
-            // Ajouter un nouveau véhicule
+            // Ajouter un nouveau véhicule (administrateur connecté = id du jeton)
             vehiculeEnregistre = await requeteAPI(
                 API_VEHICULES,
                 "POST",
-                donnees
+                { ...donnees, administrateur_id: idAdministrateur() }
             );
         }
 
@@ -609,6 +626,4 @@ modal.addEventListener("click", event => {
 chargerVehicules();
 
         
-
-
 

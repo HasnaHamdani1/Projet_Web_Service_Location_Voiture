@@ -1,10 +1,13 @@
 
-const HOST = window.location.hostname || "localhost";
+// Adresses des services : config.js (frontend/server.py, variables du compose).
+// Par défaut, même machine que la page avec les ports publiés par Docker Compose.
+const ORIGINE = `${window.location.protocol}//${window.location.hostname || "localhost"}`;
+const CONFIG = window.APP_CONFIG || {};
 
 const API = {
-  auth: `http://${HOST}:8014`,
-  vehicle: `http://${HOST}:8005`,
-  reservation: `http://${HOST}:8002`
+  auth: CONFIG.auth || `${ORIGINE}:8004`,
+  vehicle: CONFIG.vehicle || `${ORIGINE}:8005`,
+  reservation: CONFIG.reservation || `${ORIGINE}:8002`
 };
 
 const state = {
@@ -70,7 +73,9 @@ async function apiRequest(service, path, options = {}) {
     const detail = data?.detail;
     const message = Array.isArray(detail)
       ? detail.map(item => item.msg).join(", ")
-      : detail;
+      : (Array.isArray(data?.erreurs) && data.erreurs.length
+          ? data.erreurs.map(item => item.message).join(", ")
+          : detail);
 
     throw new Error(message || `Erreur HTTP ${response.status}`);
   }
@@ -323,22 +328,23 @@ $("#booking-form").addEventListener("submit", async event => {
   button.disabled = true;
 
   try {
-    const reservation = await apiRequest("reservation", "/reservations", {
+    // Le service Réservation répond {"message", "reservation"} ; le client est celui du jeton
+    const reponse = await apiRequest("reservation", "/reservations", {
       method: "POST",
       body: JSON.stringify({
-        client_id: state.user.id,
-        vehicule_id: state.selectedVehicle.id,
+        vehicule_id: Number(state.selectedVehicle.id),
         date_debut: dateDebut,
         date_fin: dateFin
       })
     });
+    const reservation = reponse?.reservation || reponse;
 
     $("#booking-form").reset();
     $("#booking-section").classList.add("hidden");
     state.selectedVehicle = null;
 
     showMessage(
-      `Réservation créée avec succès ! Numéro : ${reservation.id}. Statut : ${reservation.statut}.`
+      `Réservation créée avec succès ! Numéro : ${reservation.numero || reservation.id}. Montant : ${reservation.prix_total} DH. Statut : ${reservation.statut}.`
     );
 
     await chargerReservations();
@@ -381,7 +387,7 @@ async function chargerReservations() {
       return `
         <article class="reservation-card">
           <div>
-            <h3>Réservation n° ${escapeHTML(reservation.id)}</h3>
+            <h3>Réservation ${escapeHTML(reservation.numero || `n° ${reservation.id}`)}</h3>
             <p>Véhicule n° ${escapeHTML(reservation.vehicule_id)}</p>
             <p>Du ${escapeHTML(reservation.date_debut)}
                au ${escapeHTML(reservation.date_fin)}</p>

@@ -1,5 +1,5 @@
-﻿const HOST = window.location.hostname;
-const API_VEHICULES = `http://${HOST}:8005/vehicules`;
+// Adresse du service Véhicule : config.js (frontend/server.py), même machine que la page par défaut
+const API_VEHICULES = `${window.APP_CONFIG?.vehicle || `${location.protocol}//${location.hostname}:8005`}/vehicules`;
 
 const erreurBox = document.getElementById("dashboard-error");
 

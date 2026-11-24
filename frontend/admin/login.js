@@ -1,10 +1,5 @@
-
-// Service Authentification (port publié par Docker Compose : 8014)
-const API_AUTH = (window.location.hostname === "localhost" ||
-                  window.location.hostname === "127.0.0.1")
-    ? "http://localhost:8014"
-    : "http://100.112.66.13:8014";
-
+// Service Authentification (port publié par Docker Compose : 8004)
+const API_AUTH = window.APP_CONFIG?.auth || `${location.protocol}//${location.hostname}:8004`;
 const form = document.getElementById("login-form");
 const errorMessage = document.getElementById("error-message");
 const loginButton = document.getElementById("login-button");
@@ -43,7 +38,6 @@ form.addEventListener("submit", async (event) => {
             const detail = Array.isArray(resultat.detail)
                 ? "E-mail ou mot de passe invalide."
                 : resultat.detail;
-
             throw new Error(detail || "Impossible de se connecter.");
         }
 
@@ -65,7 +59,6 @@ form.addEventListener("submit", async (event) => {
             erreur instanceof TypeError
                 ? `Service d'authentification injoignable (${API_AUTH}).`
                 : erreur.message;
-
     } finally {
         loginButton.disabled = false;
         loginButton.textContent = "Se connecter";

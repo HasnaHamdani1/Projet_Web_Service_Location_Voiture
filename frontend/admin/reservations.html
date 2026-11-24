@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -20,8 +20,8 @@
             <li><a href="dashboard.html" class="sidebar-link"><span>&#9636;</span> Dashboard</a></li>
             <li><a href="admin.html" class="sidebar-link"><span>&#128663;</span> V&eacute;hicules</a></li>
             <li class="active"><a href="reservations.html" class="sidebar-link"><span>&#128197;</span> R&eacute;servations</a></li>
-            <li><a href="../Contrat/index.html" class="sidebar-link"><span>&#128196;</span> Contrats</a></li>
-            <li><a href="http://localhost:5173" class="sidebar-link"><span>&#11013;</span> Retours</a></li>
+            <li><a href="/Contrat/index.html" class="sidebar-link"><span>&#128196;</span> Contrats</a></li>
+            <li><a href="#" data-module="retours" class="sidebar-link"><span>&#11013;</span> Retours</a></li>
             <li><a href="#" class="sidebar-link"><span>&#9881;</span> Param&egrave;tres</a></li>
         </ul>
     </aside>
@@ -44,7 +44,10 @@
                     <h1>R&eacute;servations</h1>
                     <p>Consultez et suivez toutes les r&eacute;servations des clients.</p>
                 </div>
-                <button id="refresh-button" class="refresh-button">&#8635; Actualiser</button>
+                <div class="heading-actions">
+                    <button id="export-button" class="refresh-button">&#11015; Export CSV</button>
+                    <button id="refresh-button" class="refresh-button">&#8635; Actualiser</button>
+                </div>
             </div>
 
             <div id="reservations-error" class="reservations-error" hidden></div>
@@ -97,10 +100,11 @@
                                 <th>Date de fin</th>
                                 <th>Montant</th>
                                 <th>Statut</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="reservations-body">
-                            <tr><td colspan="7" class="table-message">Chargement...</td></tr>
+                            <tr><td colspan="8" class="table-message">Chargement...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -108,6 +112,8 @@
         </section>
     </main>
 </div>
+<script src="/config.js"></script>
+<script src="menu.js"></script>
 <script src="reservations.js"></script>
 </body>
 </html>

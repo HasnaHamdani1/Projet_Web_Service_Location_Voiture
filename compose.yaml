@@ -1,21 +1,26 @@
-﻿
-
+# PARC AUTO – toute la plateforme sur UN seul PC (branche main) :
+#   docker compose up -d --build
+# Un service par PC : voir compose.leila.yaml, compose.maryam.yaml, compose.sara.yaml,
+# compose.hasna.yaml et docs/MULTI_PC.md.
 services:
   mysql:
     image: mysql:8.4.13
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-db_location_vehicules}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-db_location_voitures}
       MYSQL_USER: ${MYSQL_USER:-location_app}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
     command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_general_ci"]
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./db_location_vehicules.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      # Base UNIQUE de l'équipe (dump de référence) : tous les services utilisent db_location_voitures
+      - ./Base_de_données/db_location_voitures.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
       - ./service_contrat/migrations/002_add_date_validation.sql:/docker-entrypoint-initdb.d/002_contract_date_validation.sql:ro
       - ./service_contrat/migrations/003_add_caution.sql:/docker-entrypoint-initdb.d/003_contract_caution.sql:ro
       - ./service_contrat/migrations/004_add_date_cloture.sql:/docker-entrypoint-initdb.d/004_contract_date_cloture.sql:ro
-      - ./service_contrat/migrations/005_create_prolongation.sql:/docker-entrypoint-initdb.d/005_contract_extension.sql:ro
+      - ./service_contrat/migrations/005_add_deposit_details.sql:/docker-entrypoint-initdb.d/005_contract_deposit.sql:ro
+      - ./service_reservation/migrations/006_service_reservation.sql:/docker-entrypoint-initdb.d/006_service_reservation.sql:ro
+      - ./database/migrations/007_vehicules_image_url.sql:/docker-entrypoint-initdb.d/007_vehicules_image_url.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
       interval: 5s
@@ -29,7 +34,7 @@ services:
       context: .
       dockerfile: Dockerfile.vehicule
     environment:
-      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_voitures}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
     depends_on:
       mysql:
@@ -51,10 +56,15 @@ services:
       context: .
       dockerfile: service_reservation/Dockerfile
     environment:
-      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/db_location_voitures
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_voitures}
       VEHICLE_SERVICE_URL: http://service_vehicule:8000
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      SERVICE_API_KEYS: ${RESERVATION_SERVICE_API_KEYS:-}
+      LECTURE_PUBLIQUE: ${RESERVATION_LECTURE_PUBLIQUE:-true}
+      CLIENT_PROVIDER: db
+      DEVISE: ${DEVISE:-MAD}
+      EMAIL_BACKEND: ${RESERVATION_EMAIL_BACKEND:-console}
     depends_on:
       mysql:
         condition: service_healthy
@@ -75,7 +85,7 @@ services:
       context: .
       dockerfile: service_auth/Dockerfile
     environment:
-      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/db_location_voitures
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_voitures}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_TTL_MINUTES: ${JWT_TTL_MINUTES:-60}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
@@ -83,7 +93,7 @@ services:
       mysql:
         condition: service_healthy
     ports:
-      - "8014:8000"
+      - "8004:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 10s
@@ -97,9 +107,10 @@ services:
       context: .
       dockerfile: service_contrat/Dockerfile
     environment:
-      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_vehicules}
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_voitures}
       RESERVATION_SERVICE_URL: http://service_reservation:8000
       RESERVATION_SERVICE_TIMEOUT_SECONDS: ${RESERVATION_SERVICE_TIMEOUT_SECONDS:-5}
+      RESERVATION_API_KEY: ${CONTRAT_RESERVATION_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
     depends_on:
@@ -117,17 +128,43 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  service_retour:
+    build:
+      context: ./service_retour
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_voitures}
+      CONTRAT_API_URL: http://service_contrat:8000
+      VEHICULE_API_URL: http://service_vehicule:8000
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service_contrat:
+        condition: service_healthy
+      service_vehicule:
+        condition: service_healthy
+    ports:
+      - "8006:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
   frontend:
     build: ./frontend
-    environment:
-      AUTH_API_URL: http://localhost:8014
-      VEHICLE_API_URL: http://localhost:8005
-      RESERVATION_API_URL: http://localhost:8002
-      CONTRACT_API_URL: http://localhost:8003
+    # Accueil, espace client, administration (véhicules, réservations), pages Contrat.
+    # Adresses des API calculées dans le navigateur (hôte de la page + port publié).
     depends_on:
       service_auth:
         condition: service_healthy
       service_vehicule:
+        condition: service_healthy
+      service_reservation:
+        condition: service_healthy
+      service_contrat:
         condition: service_healthy
     ports:
       - "3000:3000"
@@ -139,7 +176,17 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  # Interface Retours (React, Hasna) – http://localhost:5173
+  frontend_retour:
+    build:
+      context: ./frontend/Retour
+    depends_on:
+      service_retour:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+
 volumes:
   mysql_data:
   vehicule_images:
-

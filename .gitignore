@@ -8,3 +8,7 @@ venv/
 .env.*
 !.env.example
 !**/.env.example
+
+# Dépendances et constructions des frontends
+node_modules/
+dist/

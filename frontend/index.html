@@ -932,6 +932,7 @@ footer {
   </div>
 </footer>
 
+<script src="/config.js"></script>
 <script>
 /* Menu mobile */
 const menuToggle = document.getElementById("menu-toggle");
@@ -964,7 +965,7 @@ mainNav.querySelectorAll("a").forEach(link => {
 
 /* Configuration du service véhicule */
 const API_BASE =
-  `${window.location.protocol}//${window.location.hostname}:8005`;
+  window.APP_CONFIG?.vehicle || `${window.location.protocol}//${window.location.hostname}:8005`;
 
 const API_VEHICULES = `${API_BASE}/vehicules`;
 

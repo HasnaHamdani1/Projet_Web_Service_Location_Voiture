@@ -1,38 +1,64 @@
-# LocationVoiture
+# LocationVoiture – PARC AUTO
 
-Distributed car-rental application. The current Compose stack runs the frontend, Vehicle, Reservation, Contract, and Authentication APIs against one MySQL database.
+Distributed car-rental application (G9). The services talk to each other only through their REST APIs and share **one** MySQL database, `db_location_voitures`. Two ways to run it, no Tailscale:
 
-## Start the available services
+- **Whole platform on one PC** (branch `main`, `compose.yaml`): see *Start* below.
+- **One service per PC** (each member runs her own service, everybody uses the database hosted on Hasna's PC): `compose.leila.yaml`, `compose.maryam.yaml`, `compose.sara.yaml`, `compose.hasna.yaml`, step by step in [docs/MULTI_PC.md](docs/MULTI_PC.md).
 
-1. Copy `.env.example` to `.env` and replace the example MySQL passwords and JWT secret. Use URL-safe characters in `MYSQL_PASSWORD`, because Compose builds the SQLAlchemy URL from it.
-2. From the repository root, run:
+## Branches
+
+| Branch | Owner | Content |
+|---|---|---|
+| `main` | team | complete platform (all services merged), launched with `compose.yaml` |
+| `fonctionnalite/admin-frontend` | Leila | Vehicle API (root `main.py`…), Authentication API (`service_auth/`), common frontend (`frontend/`: home page, customer area, administration) |
+| `branch_maryam` | Maryam | Reservation API (`service_reservation/`) |
+| `service-contrat` | Sara | Contract API (`service_contrat/`) and Contract pages (`frontend/Contrat/`) |
+| `branch_hasna` | Hasna | Return API (`service_retour/`), Return frontend (`frontend/Retour/`), shared database dump (`Base_de_données/`) |
+
+## Start
+
+1. Copy `.env.example` to `.env` and replace `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` (letters and digits only) and `JWT_SECRET` (long random string).
+2. From the repository root:
 
    ```powershell
+   docker compose down -v        # only to restart from an empty database
    docker compose up --build
+   docker compose exec service_auth python -m service_auth.create_admin   # first administrator
    ```
 
-3. Available local API endpoints:
+3. Open:
 
-   - Vehicle: `http://localhost:8001/docs`
-   - Reservation: `http://localhost:8002/docs`
-   - Contract: `http://localhost:8003/docs`
-   - Authentication: `http://localhost:8004/docs`
-   - Frontend: `http://localhost:3000`
-   - MySQL is available to containers at `mysql:3306`; it is not published to the host.
+   | What | Address | Owner |
+   |---|---|---|
+   | Home page and catalogue | http://localhost:3000 | Leila |
+   | Customer area (sign-up, booking, simulated payment, my bookings) | http://localhost:3000/client.html | Leila (uses the Reservation API) |
+   | Administration (`/admin/login.html`): dashboard, vehicles, reservations, contracts, returns | http://localhost:3000/admin/login.html | Leila, Sara |
+   | Vehicle API | http://localhost:8005/docs | Leila |
+   | Reservation API | http://localhost:8002/docs | Maryam |
+   | Contract API | http://localhost:8003/docs | Sara |
+   | Authentication API | http://localhost:8004/docs | Leila |
+   | Return API | http://localhost:8006/docs | Hasna |
+   | Return frontend (React) | http://localhost:5173 | Hasna |
 
-Compose initializes a new MySQL volume from `db_location_vehicules.sql`, then applies Contract migrations 002-005. Initialization scripts run only when MySQL creates an empty data directory. Existing volumes need the unapplied migrations run manually before deploying a newer Contract service.
+Agency reservations page (`/admin/reservations.html`): list with monthly counters, search and status filter, counter confirmation of a payment, cancellation with a reason, CSV export. It calls the Reservation API with the administrator's token.
 
-## Current scope and integration gaps
+Browser pages find the APIs on the same machine as the page (`frontend/server.py` writes `config.js`), so the same platform also works when opened from another computer (classroom network) with a single address to share. Set `AUTH_API_URL`, `VEHICLE_API_URL`… only to point elsewhere.
 
-- The Compose stack includes the services currently present in the repository. The Return service is not yet present; its implementation is assigned to its owner.
-- The frontend supports registration/login, vehicle browsing, reservation creation and simulated payment, and contract workflows. The Reservation API has no client-specific reservation-list endpoint, so the frontend keeps newly created reservations only for the current browser session.
-- Contract endpoints require JWTs signed with `JWT_SECRET`, with `sub` as a numeric user ID string and `role` as `CLIENT` or `ADMINISTRATEUR`. The Auth API issues this format. Register customers at `POST /auth/inscription` and obtain tokens at `POST /auth/token`. Create the first administrator interactively with `docker compose exec service_auth python -m service_auth.create_admin`.
-- Contract extension annexes are implemented, but end-to-end extensions wait for the Reservation owner to implement `POST /reservations/{reservation_id}/prolongations` with atomic availability checks and idempotency, as specified in [TEAM_SYNC.md](TEAM_SYNC.md).
-- Vehicle and Reservation retain SQLite defaults for direct local development. Compose supplies the shared MySQL `DATABASE_URL` to both services.
-- The SQL dump was generated from MariaDB; the Compose stack uses the MySQL 8.4 LTS image. If the initialization import fails due to MariaDB-specific SQL, update the canonical schema/migrations rather than switching the Compose database silently.
+## REST links between services
+
+| Caller → service | Route | Purpose |
+|---|---|---|
+| Reservation → Vehicle | `GET /vehicules`, `GET /vehicules/{id}` | catalogue, price, status, photo |
+| Customer area → Auth | `POST /auth/inscription`, `/auth/token`, `GET /auth/me` | customer and admin accounts |
+| Customer area / admin pages → Reservation | `POST /reservations`, `GET /reservations`, `POST /reservations/{id}/paiement`, `PUT /reservations/{id}/annulation`, `PATCH /reservations/{id}/statut`, `GET /reservations/export.csv` | bookings (price computed by the server) |
+| Contract → Reservation | `GET /reservations/{id}` (header `X-API-Key`) | create a contract from a confirmed booking |
+| Return → Contract | `GET /contrats/{id}`, `PUT /contrats/{id}/statut` `{"statut":"CLOTURE"}` | close the contract |
+| Return → Vehicle | `PUT /vehicules/{id}/statut` | vehicle back to `DISPONIBLE` or `MAINTENANCE` |
+
+Database initialization on an empty volume: dump `Base_de_données/db_location_voitures.sql`, Contract migrations 002-005, Reservation 006, Vehicle 007 (`database/migrations`). Scripts run only on an empty data directory; for an existing volume, apply the missing migrations once or run `docker compose down -v`.
 
 ## Shared database and service discovery
 
-The database connection is provided through `DATABASE_URL`. Each service uses the same MySQL instance and owns writes to its tables. Reservation calls Vehicle at `http://service_vehicule:8000`; Contract calls Reservation at `http://service_reservation:8000`. The browser frontend calls the published host ports. Do not use `localhost` for container-to-container calls.
+The database connection is provided through `DATABASE_URL`. Each service uses the same MySQL instance and owns writes to its tables. With `compose.yaml`, Reservation calls Vehicle at `http://service_vehicule:8000` and Contract calls Reservation at `http://service_reservation:8000`; the browser frontend calls the published host ports. In multi-PC mode the same variables hold the other PCs' addresses (`IP_LEILA`, `IP_MARYAM`, `IP_SARA`, `IP_HASNA` in `.env`). Never write an IP address in the code.
 
 Compose pins MySQL to 8.4.13, an official 8.4 LTS image. The official MySQL image and MySQL documentation distinguish the stable LTS track from the Innovation track: [official image tags](https://hub.docker.com/_/mysql?tab=tags), [MySQL release tracks](https://dev.mysql.com/doc/refman/8.4/en/mysql-releases.html).

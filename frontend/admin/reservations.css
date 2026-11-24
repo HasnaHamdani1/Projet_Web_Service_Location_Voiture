@@ -1,4 +1,4 @@
-﻿.reservations-page {
+.reservations-page {
     padding: 28px;
 }
 
@@ -187,3 +187,19 @@
     .reservations-panel { padding: 14px; }
     .filters, .filters input, .filters select { width: 100%; }
 }
+
+/* Actions de l'agence et export */
+.heading-actions { display: flex; gap: 10px; }
+.reservation-actions { white-space: nowrap; }
+.action-button {
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 6px;
+}
+.action-confirm { background: #e3f8eb; color: #187344; border-color: #b9e8cb; }
+.action-cancel { background: #fde8e8; color: #b42318; border-color: #f6c4c4; }
+.action-button:hover { filter: brightness(0.96); }
