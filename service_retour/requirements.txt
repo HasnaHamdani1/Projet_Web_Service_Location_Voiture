@@ -8,3 +8,4 @@ pydantic
 httpx
 pytest
 requests
+cryptography>=42

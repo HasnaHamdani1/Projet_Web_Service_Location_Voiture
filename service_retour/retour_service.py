@@ -1,4 +1,4 @@
-﻿import requests
+import requests
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -221,9 +221,9 @@ class RetourService:
         derniere_reponse = None
 
         try:
-            # La méthode exacte dépend du service Contrat : on essaie les 3
-            for methode in (requests.put, requests.post, requests.patch):
-                response = methode(url, timeout=5)
+            # Route du service Contrat : PUT /contrats/{id}/statut {"statut": "CLOTURE"}
+            for methode in (requests.put,):
+                response = methode(url, json={"statut": "CLOTURE"}, timeout=5)
 
                 if response.status_code == 405:      # mauvaise méthode
                     derniere_reponse = response
