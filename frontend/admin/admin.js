@@ -52,7 +52,8 @@ function idAdministrateur() {
 async function requeteAPI(url, methode = "GET", donnees = null) {
     const options = {
         method: methode,
-        headers: {}
+        // Jeton de l'administrateur : le service Véhicule réserve l'écriture à son administrateur
+        headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken") || ""}` }
     };
 
     if (donnees !== null) {
@@ -93,6 +94,7 @@ async function envoyerPhotoVehicule(id, fichier) {
         `${API_VEHICULES}/${id}/image`,
         {
             method: "POST",
+            headers: { Authorization: `Bearer ${sessionStorage.getItem("adminToken") || ""}` },
             body: formulaireImage
         }
     );

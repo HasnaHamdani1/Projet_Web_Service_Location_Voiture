@@ -6,9 +6,10 @@
   <title>Identification du contrat · Parc Auto</title>
   <link rel="stylesheet" href="contrats.css">
   <script src="/config.js"></script>
+  <script src="/admin/menu.js" defer></script>
   <script type="module" src="formulaire-identification.js"></script>
 </head>
-<body>
+<body data-service="CONTRAT">
 <aside class="rail">
   <div class="rail-brand">
     <span class="rail-brand-icon" aria-hidden="true">🚗</span>
@@ -19,11 +20,11 @@
   </div>
   <nav aria-label="Administration">
     <ul class="rail-menu">
-      <li><a class="rail-link" href="../admin/dashboard.html"><span aria-hidden="true">▦</span> Dashboard</a></li>
-      <li><a class="rail-link" href="../admin/admin.html"><span aria-hidden="true">🚗</span> Véhicules</a></li>
-      <li><span class="rail-link" aria-disabled="true"><span aria-hidden="true">📅</span> Réservations</span></li>
-      <li class="active"><a class="rail-link" href="index.html" aria-current="location"><span aria-hidden="true">📄</span> Contrats</a></li>
-      <li><a class="rail-link" href="http://localhost:5173"><span aria-hidden="true">⬅️</span> Retours</a></li>
+      <li><a class="rail-link" href="../admin/dashboard.html" data-module="dashboard"><span aria-hidden="true">▦</span> Dashboard</a></li>
+      <li><a class="rail-link" href="../admin/admin.html" data-module="vehicules"><span aria-hidden="true">🚗</span> Véhicules</a></li>
+      <li><span class="rail-link" aria-disabled="true" data-module="reservations"><span aria-hidden="true">📅</span> Réservations</span></li>
+      <li class="active"><a class="rail-link" href="index.html" aria-current="location" data-module="contrats"><span aria-hidden="true">📄</span> Contrats</a></li>
+      <li><a class="rail-link" href="http://localhost:5173" data-module="retours"><span aria-hidden="true">⬅️</span> Retours</a></li>
       <li><span class="rail-link" aria-disabled="true"><span aria-hidden="true">⚙️</span> Paramètres</span></li>
     </ul>
   </nav>

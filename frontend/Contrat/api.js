@@ -11,6 +11,9 @@ const configuration = {
 async function requete(url, options = {}) {
   const headers = { Accept: "application/json" };
   if (options.body) headers["Content-Type"] = "application/json";
+  // Jeton de l'administrateur connecté : le service Contrat réserve l'écriture à l'administrateur Contrat
+  const jeton = sessionStorage.getItem("adminToken");
+  if (jeton) headers.Authorization = `Bearer ${jeton}`;
   let reponse;
   try {
     reponse = await fetch(url, { ...options, headers, signal: options.signal || AbortSignal.timeout(15000) });

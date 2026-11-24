@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from .database import SessionLocal
-from .models import Utilisateur, Client, Administrateur
+from .models import AdministrateurService, Utilisateur, Client, Administrateur
 from .schemas import (
     ClientRegistration,
     LoginRequest,
@@ -44,6 +44,14 @@ app.add_middleware(
 )
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def service_administrateur(db: Session, utilisateur: Utilisateur) -> str | None:
+    """Service géré par un administrateur (table administrateur_services), None pour un client."""
+    if utilisateur.role != "ADMINISTRATEUR":
+        return None
+    ligne = db.get(AdministrateurService, utilisateur.id)
+    return ligne.service if ligne else None
 
 
 def get_db():
@@ -152,6 +160,7 @@ def connexion(
     token, expires_in = create_access_token(
         utilisateur.id,
         utilisateur.role,
+        service_administrateur(db, utilisateur),
     )
 
     return TokenResponse(
@@ -206,4 +215,6 @@ def profil(
             detail="Utilisateur introuvable.",
         )
 
-    return utilisateur
+    profil = UserRead.model_validate(utilisateur)
+    profil.service = service_administrateur(db, utilisateur)
+    return profil

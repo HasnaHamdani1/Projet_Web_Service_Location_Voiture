@@ -1,3 +1,5 @@
+import { entetesAuth } from './session';
+
 // Service Retour : VITE_RETOUR_API_URL, sinon même machine que la page (port 8006 de compose.yaml)
 const API_URL = import.meta.env.VITE_RETOUR_API_URL || `${window.location.protocol}//${window.location.hostname}:8006`;
 
@@ -61,7 +63,7 @@ export async function creerRetour(data) {
 
   const response = await fetch(`${API_URL}/retours/traiter`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: entetesAuth({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 
@@ -73,7 +75,7 @@ export async function creerRetour(data) {
 
 // 4. Supprimer un retour
 export async function supprimerRetour(id) {
-  const response = await fetch(`${API_URL}/retours/${id}`, { method: 'DELETE' });
+  const response = await fetch(`${API_URL}/retours/${id}`, { method: 'DELETE', headers: entetesAuth() });
 
   if (!response.ok) {
     throw new Error(await lireErreur(response, 'Erreur lors de la suppression'));

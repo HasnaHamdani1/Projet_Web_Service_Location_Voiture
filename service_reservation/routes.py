@@ -45,7 +45,8 @@ from .schemas import (
     VehiculeDisponibleOut,
     VehiculePublicOut,
 )
-from .securite import Acteur, administrateur, administrateur_ou_service, client_connecte, lecteur, utilisateur
+from .securite import (Acteur, admin_reservations, admin_reservations_ou_service, administrateur, client_connecte, lecteur,
+                       utilisateur, verifier_gestion_reservations)
 from .service import ServiceReservation
 
 router = APIRouter()
@@ -112,7 +113,7 @@ def devis(body: DevisRequest, svc: ServiceReservation = Depends(service)):
 @router.get("/reservations/export.csv", tags=["Réservations"], response_class=StreamingResponse,
             summary="Export CSV des réservations filtrées (administrateur)")
 def exporter(search: str | None = Query(None, max_length=100), statut: str | None = Query(None, pattern=STATUT),
-             mois: str | None = Query(None, pattern=r"^\d{4}-\d{2}$"), acteur: Acteur = Depends(administrateur),
+             mois: str | None = Query(None, pattern=r"^\d{4}-\d{2}$"), acteur: Acteur = Depends(admin_reservations),
              svc: ServiceReservation = Depends(service)):
     items, _ = svc.lister(page=None, size=0, acteur=acteur, recherche=search, statut=statut, mois=mois,
                           client_id=None, vehicule_id=None)
@@ -149,6 +150,7 @@ def lire(reservation_id: int, acteur: Acteur | None = Depends(lecteur), svc: Ser
              summary="Paiement simulé : succès → CONFIRMEE (client propriétaire ou administrateur)")
 def payer(reservation_id: int, body: PaiementRequest, bg: BackgroundTasks,
           acteur: Acteur = Depends(utilisateur), svc: ServiceReservation = Depends(service)):
+    verifier_gestion_reservations(acteur)
     r, ok = svc.payer(reservation_id, body.paiement_reussi, acteur)
     if ok:
         bg.add_task(publier, "reservation.confirmed", svc.donnees_evenement(r))
@@ -160,7 +162,7 @@ def payer(reservation_id: int, body: PaiementRequest, bg: BackgroundTasks,
 @router.patch("/reservations/{reservation_id}/statut", response_model=ReponseReservation, tags=["Réservations"],
               summary="F003 → F004 – Confirmer ou annuler (administrateur, paiement à l'agence)")
 def changer_statut(reservation_id: int, body: StatutRequest, bg: BackgroundTasks,
-                   acteur: Acteur = Depends(administrateur), svc: ServiceReservation = Depends(service)):
+                   acteur: Acteur = Depends(admin_reservations), svc: ServiceReservation = Depends(service)):
     if body.statut == "CONFIRMEE":
         r = svc.confirmer(reservation_id, acteur)
         bg.add_task(publier, "reservation.confirmed", svc.donnees_evenement(r))
@@ -174,6 +176,7 @@ def changer_statut(reservation_id: int, body: StatutRequest, bg: BackgroundTasks
             summary="Annuler (client propriétaire ou administrateur, avant le début)")
 def annuler(reservation_id: int, bg: BackgroundTasks, body: AnnulationRequest | None = Body(default=None),
             acteur: Acteur = Depends(utilisateur), svc: ServiceReservation = Depends(service)):
+    verifier_gestion_reservations(acteur)
     r = svc.annuler(reservation_id, body.motif if body else None, acteur)
     bg.add_task(publier, "reservation.cancelled", svc.donnees_evenement(r))
     return {"message": "Réservation annulée avec succès", "reservation": svc.serialiser(r)}
@@ -185,7 +188,7 @@ def annuler(reservation_id: int, bg: BackgroundTasks, body: AnnulationRequest | 
                          "renvoie toujours le même résultat sans prolonger deux fois (TEAM_SYNC §3.2.1).")
 def prolonger(reservation_id: int, body: ProlongationRequest, bg: BackgroundTasks,
               idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=100),
-              acteur: Acteur = Depends(administrateur_ou_service), svc: ServiceReservation = Depends(service)):
+              acteur: Acteur = Depends(admin_reservations_ou_service), svc: ServiceReservation = Depends(service)):
     p = svc.prolonger(reservation_id, body.nouvelle_date_fin, idempotency_key, acteur)
     r = svc.obtenir(reservation_id, None)
     bg.add_task(publier, "reservation.extended", svc.donnees_evenement(r))
@@ -260,7 +263,7 @@ def disponibilite(vehicule_id: int, date_debut: date, date_fin: date,
 # ============================================================================ clients (lecture)
 @router.get("/clients", response_model=list[ClientOut], tags=["Clients"],
             summary="Clients (données du service d'authentification, lecture seule)")
-def clients(search: str | None = Query(None, max_length=100), _: Acteur = Depends(administrateur),
+def clients(search: str | None = Query(None, max_length=100), _: Acteur = Depends(admin_reservations),
             db: Session = Depends(get_db)):
     return [c.en_dict() for c in fournisseur_clients(db).lister(search)]
 
@@ -271,6 +274,7 @@ def client(client_id: int, acteur: Acteur = Depends(utilisateur), db: Session = 
 
     if acteur.est_client and acteur.id != client_id:
         raise Introuvable("Client introuvable")
+    verifier_gestion_reservations(acteur)
     c = fournisseur_clients(db).obtenir(client_id)
     if not c:
         raise Introuvable("Client introuvable")

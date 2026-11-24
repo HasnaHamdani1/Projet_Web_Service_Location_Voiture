@@ -17,6 +17,7 @@ services:
       RESERVATION_API_KEY: ${CONTRAT_RESERVATION_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      CONTRAT_SERVICE_API_KEYS: ${CONTRAT_SERVICE_API_KEYS:-}
     ports:
       - "8003:8000"
     healthcheck:

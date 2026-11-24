@@ -162,16 +162,24 @@ def client(expediteur_test):
     app.dependency_overrides.clear()
 
 
-def jeton(user_id: int, role: str, minutes: int = 30) -> dict:
-    tok = jwt.encode({"sub": str(user_id), "role": role,
-                      "exp": datetime.now(timezone.utc) + timedelta(minutes=minutes)},
-                     os.environ["JWT_SECRET"], algorithm="HS256")
+def jeton(user_id: int, role: str, minutes: int = 30, service: str | None = None) -> dict:
+    claims = {"sub": str(user_id), "role": role, "exp": datetime.now(timezone.utc) + timedelta(minutes=minutes)}
+    if service:
+        claims["service"] = service  # administrateur : service qu'il gère (service_auth)
+    tok = jwt.encode(claims, os.environ["JWT_SECRET"], algorithm="HS256")
     return {"Authorization": f"Bearer {tok}"}
 
 
 @pytest.fixture
 def h_admin():
-    return jeton(ADMIN, "ADMINISTRATEUR")
+    """Administrateur du service Réservation (Maryam)."""
+    return jeton(ADMIN, "ADMINISTRATEUR", service="RESERVATION")
+
+
+@pytest.fixture
+def h_admin_vehicules():
+    """Administrateur d'un autre service (Véhicule) : consulte mais n'agit pas sur les réservations."""
+    return jeton(ADMIN, "ADMINISTRATEUR", service="VEHICULE")
 
 
 @pytest.fixture

@@ -53,7 +53,7 @@ def verify_password(password: str, encoded: str) -> bool:
         return False
 
 
-def create_access_token(user_id: int, role: str) -> tuple[str, int]:
+def create_access_token(user_id: int, role: str, service: str | None = None) -> tuple[str, int]:
     secret = os.getenv("JWT_SECRET")
     if not secret:
         raise HTTPException(
@@ -74,13 +74,17 @@ def create_access_token(user_id: int, role: str) -> tuple[str, int]:
         )
     now = datetime.now(timezone.utc)
     expires = now + timedelta(minutes=ttl_minutes)
+    claims = {
+        "sub": str(user_id),
+        "role": role,
+        "iat": now,
+        "exp": expires,
+    }
+    # Administrateur : service qu'il gère, vérifié par chaque microservice avant une écriture
+    if service:
+        claims["service"] = service
     token = jwt.encode(
-        {
-            "sub": str(user_id),
-            "role": role,
-            "iat": now,
-            "exp": expires,
-        },
+        claims,
         secret,
         algorithm="HS256",
     )

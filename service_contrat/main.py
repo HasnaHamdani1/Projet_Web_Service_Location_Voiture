@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from . import metier_contrat, models, reservation_client
+from .auth import require_admin_contrats, require_admin_contrats_ou_service
 from .database import Base, engine, get_db
 from .schemas import (
     CautionCreate,
@@ -33,16 +34,6 @@ def _charger_contrat(db: Session, contrat_id: int):
     return contrat
 
 
-def _administrateur_id_par_defaut() -> int:
-    try:
-        admin_id = int(os.getenv("CONTRAT_DEFAULT_ADMIN_ID", "1"))
-    except ValueError as exc:
-        raise HTTPException(status_code=503, detail="CONTRAT_DEFAULT_ADMIN_ID doit être un entier") from exc
-    if admin_id <= 0:
-        raise HTTPException(status_code=503, detail="CONTRAT_DEFAULT_ADMIN_ID doit être positif")
-    return admin_id
-
-
 @app.get("/")
 def accueil():
     return {"message": "Bienvenue dans le service Contrat"}
@@ -58,8 +49,9 @@ def health(db: Session = Depends(get_db)):
 
 
 @app.post("/contrats", response_model=ContratRead, status_code=201)
-def creer_contrat(demande: ContratCreate, db: Session = Depends(get_db)):
-    return metier_contrat.creer_contrat(db, demande.reservation_id, _administrateur_id_par_defaut())
+def creer_contrat(demande: ContratCreate, db: Session = Depends(get_db),
+                  admin: dict = Depends(require_admin_contrats)):
+    return metier_contrat.creer_contrat(db, demande.reservation_id, admin["id"])
 
 
 @app.get("/contrats", response_model=list[ContratDetail])
@@ -92,13 +84,14 @@ def lire_par_numero(numero_contrat: str, db: Session = Depends(get_db)):
 
 
 @app.post("/contrats/{contrat_id}/caution", response_model=ContratRead)
-def enregistrer_caution(contrat_id: int, demande: CautionCreate, db: Session = Depends(get_db)):
+def enregistrer_caution(contrat_id: int, demande: CautionCreate, db: Session = Depends(get_db),
+                        _admin: dict = Depends(require_admin_contrats)):
     contrat = _charger_contrat(db, contrat_id)
     return metier_contrat.ajouter_caution(db, contrat, demande.montant_caution)
 
 
 @app.post("/contrats/{contrat_id}/validation", response_model=ContratRead)
-def valider(contrat_id: int, db: Session = Depends(get_db)):
+def valider(contrat_id: int, db: Session = Depends(get_db), _admin: dict = Depends(require_admin_contrats)):
     contrat = _charger_contrat(db, contrat_id)
     return metier_contrat.valider_contrat(db, contrat)
 
@@ -107,6 +100,7 @@ def valider(contrat_id: int, db: Session = Depends(get_db)):
 def finaliser_contrat(
     confirmation: ContratFinalisation,
     db: Session = Depends(get_db),
+    admin: dict = Depends(require_admin_contrats),
 ):
     """Crée et valide le contrat à la dernière étape, après confirmation des signatures."""
     if confirmation.signatures_confirmees is not True:
@@ -114,11 +108,12 @@ def finaliser_contrat(
     return metier_contrat.creer_contrat_valide(
         db,
         confirmation,
-        _administrateur_id_par_defaut(),
+        admin["id"],
     )
 
 
 @app.put("/contrats/{contrat_id}/statut", response_model=ContratRead)
-def modifier_statut(contrat_id: int, demande: ContratStatutUpdate, db: Session = Depends(get_db)):
+def modifier_statut(contrat_id: int, demande: ContratStatutUpdate, db: Session = Depends(get_db),
+                    _acteur: dict = Depends(require_admin_contrats_ou_service)):
     contrat = _charger_contrat(db, contrat_id)
     return metier_contrat.cloturer_contrat(db, contrat)

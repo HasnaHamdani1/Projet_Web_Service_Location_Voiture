@@ -102,3 +102,24 @@ def test_cors_pages_de_l_equipe_depuis_un_autre_pc(client):
     # Une origine quelconque (autre port) reste refusée
     r = client.options("/reservations", headers={"Origin": "http://exemple.com", "Access-Control-Request-Method": "GET"})
     assert "access-control-allow-origin" not in r.headers
+
+
+def test_admin_d_un_autre_service_consulte_mais_n_agit_pas(client, h_claire, h_admin, h_admin_vehicules):
+    """Chaque admin agit seulement dans son service : l'admin Véhicule lit les réservations, sans les gérer."""
+    rid = creer(client, h_claire, debut=40, fin=43)["id"]
+    # Lecture : autorisée à tout administrateur (tableau de bord)
+    assert client.get("/reservations", headers=h_admin_vehicules).status_code == 200
+    assert client.get(f"/reservations/{rid}", headers=h_admin_vehicules).status_code == 200
+    # Actions de l'agence : refusées (403) à l'admin d'un autre service
+    for methode, url, corps_json in [
+        ("patch", f"/reservations/{rid}/statut", {"statut": "CONFIRMEE"}),
+        ("put", f"/reservations/{rid}/annulation", {"motif": "test"}),
+        ("post", f"/reservations/{rid}/paiement", {"paiement_reussi": True}),
+        ("get", "/reservations/export.csv", None),
+        ("get", "/clients", None),
+    ]:
+        rep = getattr(client, methode)(url, headers=h_admin_vehicules, **({"json": corps_json} if corps_json else {}))
+        assert rep.status_code == 403, (url, rep.status_code)
+        assert rep.json()["code"] == "service_non_autorise"
+    # L'admin du service Réservation, lui, peut confirmer
+    assert client.patch(f"/reservations/{rid}/statut", json={"statut": "CONFIRMEE"}, headers=h_admin).status_code == 200
