@@ -1,6 +1,8 @@
 """Authentification commune à l'équipe (TEAM_SYNC §3.5).
 
-Jetons HS256 émis par service_auth : `sub` = id utilisateur (chaîne), `role` = CLIENT | ADMINISTRATEUR, `exp`.
+Jetons HS256 émis par service_auth : `sub` = id utilisateur (chaîne), `role` = CLIENT | ADMINISTRATEUR, `exp`,
+et pour un administrateur `service` = VEHICULE | RESERVATION | CONTRAT | RETOUR (service qu'il gère).
+Tout administrateur peut consulter ; seul l'administrateur du service RESERVATION agit sur les réservations.
 Les microservices peuvent aussi s'identifier par l'en-tête X-API-Key (SERVICE_API_KEYS).
 """
 from dataclasses import dataclass
@@ -15,6 +17,7 @@ from .erreurs import Interdit, NonAuthentifie, ServiceIndisponible
 ADMIN = "ADMINISTRATEUR"
 CLIENT = "CLIENT"
 SERVICE = "SERVICE"
+SERVICE_RESERVATION = "RESERVATION"
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -26,6 +29,11 @@ class Acteur:
     id: int | None
     role: str
     nom: str
+    service: str | None = None  # administrateur : service qu'il gère
+
+    @property
+    def gere_les_reservations(self) -> bool:
+        return self.role == ADMIN and self.service == SERVICE_RESERVATION
 
     @property
     def est_admin(self) -> bool:
@@ -47,6 +55,7 @@ def decoder_jeton(token: str) -> Acteur:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
         user_id = int(payload["sub"])
         role = str(payload["role"])
+        service = payload.get("service")
     except jwt.ExpiredSignatureError as exc:
         raise NonAuthentifie("Session expirée, veuillez vous reconnecter.", code="jeton_expire") from exc
     except (jwt.InvalidTokenError, KeyError, ValueError, TypeError) as exc:
@@ -54,7 +63,7 @@ def decoder_jeton(token: str) -> Acteur:
     if role not in (ADMIN, CLIENT):
         raise NonAuthentifie("Rôle non reconnu.")
     nom = "Administrateur" if role == ADMIN else "Client"
-    return Acteur(id=user_id, role=role, nom=f"{nom} #{user_id}")
+    return Acteur(id=user_id, role=role, nom=f"{nom} #{user_id}", service=str(service) if service else None)
 
 
 def acteur_optionnel(
@@ -107,4 +116,20 @@ def administrateur(acteur: Acteur = Depends(acteur_requis)) -> Acteur:
 def administrateur_ou_service(acteur: Acteur = Depends(acteur_requis)) -> Acteur:
     if not (acteur.est_admin or acteur.est_service):
         raise Interdit("Action réservée aux administrateurs et aux services autorisés.")
+    return acteur
+
+
+def verifier_gestion_reservations(acteur: Acteur) -> None:
+    """Un administrateur n'agit sur les réservations que s'il gère le service Réservation."""
+    if acteur.est_admin and not acteur.gere_les_reservations:
+        raise Interdit("Action réservée à l'administrateur du service Réservation.", code="service_non_autorise")
+
+
+def admin_reservations(acteur: Acteur = Depends(administrateur)) -> Acteur:
+    verifier_gestion_reservations(acteur)
+    return acteur
+
+
+def admin_reservations_ou_service(acteur: Acteur = Depends(administrateur_ou_service)) -> Acteur:
+    verifier_gestion_reservations(acteur)
     return acteur

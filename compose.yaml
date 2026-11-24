@@ -21,6 +21,7 @@ services:
       - ./service_contrat/migrations/005_add_deposit_details.sql:/docker-entrypoint-initdb.d/005_contract_deposit.sql:ro
       - ./service_reservation/migrations/006_service_reservation.sql:/docker-entrypoint-initdb.d/006_service_reservation.sql:ro
       - ./database/migrations/007_vehicules_image_url.sql:/docker-entrypoint-initdb.d/007_vehicules_image_url.sql:ro
+      - ./database/migrations/008_administrateur_services.sql:/docker-entrypoint-initdb.d/008_administrateur_services.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
       interval: 5s
@@ -36,6 +37,8 @@ services:
     environment:
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-db_location_voitures}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      VEHICULE_SERVICE_API_KEYS: ${VEHICULE_SERVICE_API_KEYS:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -113,6 +116,7 @@ services:
       RESERVATION_API_KEY: ${CONTRAT_RESERVATION_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      CONTRAT_SERVICE_API_KEYS: ${CONTRAT_SERVICE_API_KEYS:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -136,6 +140,9 @@ services:
       CONTRAT_API_URL: http://service_contrat:8000
       VEHICULE_API_URL: http://service_vehicule:8000
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      RETOUR_CONTRAT_API_KEY: ${RETOUR_CONTRAT_API_KEY:-}
+      RETOUR_VEHICULE_API_KEY: ${RETOUR_VEHICULE_API_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy

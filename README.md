@@ -23,7 +23,7 @@ Distributed car-rental application (G9). The services talk to each other only th
    ```powershell
    docker compose down -v        # only to restart from an empty database
    docker compose up --build
-   docker compose exec service_auth python -m service_auth.create_admin   # first administrator
+   docker compose exec service_auth python -m service_auth.create_admin   # one administrator per service (run 4 times)
    ```
 
 3. Open:
@@ -44,6 +44,15 @@ Agency reservations page (`/admin/reservations.html`): list with monthly counter
 
 Browser pages find the APIs on the same machine as the page (`frontend/server.py` writes `config.js`), so the same platform also works when opened from another computer (classroom network) with a single address to share. Set `AUTH_API_URL`, `VEHICLE_API_URL`… only to point elsewhere.
 
+## Administrators and rights per service
+
+Each administrator manages **one** service, chosen when the account is created (`create_admin` asks for it, stored in table `administrateur_services`, migration 008): `VEHICULE` (Leila), `RESERVATION` (Maryam), `CONTRAT` (Sara), `RETOUR` (Hasna). The token issued by the Authentication service carries this `service` claim and `GET /auth/me` returns it.
+
+- Every administrator sees the **Dashboard** and the menu of **their own service** only. Opening another service's page sends them back to the dashboard.
+- Every API **refuses (403)** a write action by an administrator of another service: Vehicle (add, edit, photo, delete), Reservation (counter confirmation, cancellation, CSV export, customer records), Contract (create, deposit, validation, closing), Return (record, edit, delete). Reading stays open.
+- Service-to-service calls use an `X-API-Key`: Contract → Reservation (`RESERVATION_SERVICE_API_KEYS` / `CONTRAT_RESERVATION_API_KEY`), Return → Contract (`CONTRAT_SERVICE_API_KEYS` / `RETOUR_CONTRAT_API_KEY`), Return → Vehicle (`VEHICULE_SERVICE_API_KEYS` / `RETOUR_VEHICULE_API_KEY`).
+- The Return interface (port 5173) receives the administrator's token from the dashboard menu (`#jeton=…`, removed from the address at once).
+
 ## REST links between services
 
 | Caller → service | Route | Purpose |
@@ -52,10 +61,10 @@ Browser pages find the APIs on the same machine as the page (`frontend/server.py
 | Customer area → Auth | `POST /auth/inscription`, `/auth/token`, `GET /auth/me` | customer and admin accounts |
 | Customer area / admin pages → Reservation | `POST /reservations`, `GET /reservations`, `POST /reservations/{id}/paiement`, `PUT /reservations/{id}/annulation`, `PATCH /reservations/{id}/statut`, `GET /reservations/export.csv` | bookings (price computed by the server) |
 | Contract → Reservation | `GET /reservations/{id}` (header `X-API-Key`) | create a contract from a confirmed booking |
-| Return → Contract | `GET /contrats/{id}`, `PUT /contrats/{id}/statut` `{"statut":"CLOTURE"}` | close the contract |
-| Return → Vehicle | `PUT /vehicules/{id}/statut` | vehicle back to `DISPONIBLE` or `MAINTENANCE` |
+| Return → Contract | `GET /contrats/{id}`, `PUT /contrats/{id}/statut` `{"statut":"CLOTURE"}` (header `X-API-Key`) | close the contract |
+| Return → Vehicle | `PUT /vehicules/{id}/statut` (header `X-API-Key`) | vehicle back to `DISPONIBLE` or `MAINTENANCE` |
 
-Database initialization on an empty volume: dump `Base_de_données/db_location_voitures.sql`, Contract migrations 002-005, Reservation 006, Vehicle 007 (`database/migrations`). Scripts run only on an empty data directory; for an existing volume, apply the missing migrations once or run `docker compose down -v`.
+Database initialization on an empty volume: dump `Base_de_données/db_location_voitures.sql`, Contract migrations 002-005, Reservation 006, Vehicle 007 and Authentication 008 (`database/migrations`). Scripts run only on an empty data directory; for an existing volume, apply the missing migrations once or run `docker compose down -v`.
 
 ## Shared database and service discovery
 
