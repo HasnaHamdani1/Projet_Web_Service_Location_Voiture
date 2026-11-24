@@ -476,13 +476,11 @@ function afficherVehicules(liste) {
                 <img
                     src="${echapperHTML(urlPhoto)}"
                     alt="Photo de ${echapperHTML(vehicule.marque)} ${echapperHTML(vehicule.modele)}"
-                    style="width: 65px; height: 45px; object-fit: cover; border-radius: 6px; margin-right: 8px; vertical-align: middle;"
+                    class="photo-vehicule"
                 >
             `
             : `
-                <span style="color: #999; font-size: 12px;">
-                    Aucune photo
-                </span>
+                <span class="photo-vide" aria-label="Aucune photo">&#128663;</span>
             `;
 
         ligne.innerHTML = `

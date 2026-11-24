@@ -40,6 +40,51 @@
         }
     }
 
+    const LIBELLE_SERVICE = {
+        VEHICULE: "Service Véhicules",
+        RESERVATION: "Service Réservations",
+        CONTRAT: "Service Contrats",
+        RETOUR: "Service Retours",
+    };
+
+    // Déconnexion : le jeton est effacé de ce navigateur, retour à la page d'accueil du site
+    function deconnecter() {
+        sessionStorage.removeItem("adminToken");
+        location.href = "/";
+    }
+
+    // Carte de l'administrateur connecté en bas de la barre latérale, avec le bouton de déconnexion
+    function carteAdmin() {
+        const barre = document.querySelector("aside.sidebar, aside.rail");
+        if (!barre || barre.querySelector(".pa-admin")) return;
+        const carte = document.createElement("div");
+        carte.className = "pa-admin";
+        carte.innerHTML = `
+            <div class="pa-admin-identite">
+                <span class="pa-admin-initiales" aria-hidden="true">A</span>
+                <div>
+                    <p class="pa-admin-nom" data-admin-nom>Administrateur</p>
+                    <p class="pa-admin-service" data-admin-service></p>
+                </div>
+            </div>
+            <button type="button" class="pa-deconnexion">Se déconnecter</button>`;
+        carte.querySelector(".pa-deconnexion").addEventListener("click", deconnecter);
+        barre.appendChild(carte);
+    }
+
+    function afficherAdmin(nom, service) {
+        if (nom) {
+            document.querySelectorAll("[data-admin-nom]").forEach((el) => { el.textContent = nom; });
+            const prenom = nom.split(/\s+/)[0];
+            document.querySelectorAll("[data-admin-bienvenue]").forEach((el) => { el.textContent = `Bonjour ${prenom}`; });
+            const initiales = nom.split(/\s+/).filter(Boolean).slice(0, 2).map((m) => m[0].toUpperCase()).join("");
+            document.querySelectorAll(".pa-admin-initiales, .admin-avatar").forEach((el) => { el.textContent = initiales || "A"; });
+        }
+        document.querySelectorAll("[data-admin-service]").forEach((el) => {
+            el.textContent = LIBELLE_SERVICE[service] || "Administrateur";
+        });
+    }
+
     function appliquer(service) {
         document.querySelectorAll("[data-module]").forEach((lien) => {
             const module = lien.dataset.module;
@@ -58,7 +103,12 @@
     }
 
     // 1. Affichage immédiat d'après le jeton (pas de clignotement du menu)
+    carteAdmin();
     appliquer(serviceDuJeton());
+    afficherAdmin(null, serviceDuJeton());
+    document.querySelectorAll("[data-action=deconnexion]").forEach((el) => {
+        el.addEventListener("click", (evenement) => { evenement.preventDefault(); deconnecter(); });
+    });
 
     // 2. Vérification auprès du service Auth : jeton expiré ou invalide → reconnexion
     const auth = config.auth || `${origine}:8004`;
@@ -67,7 +117,7 @@
         .then((profil) => {
             if (profil.role !== "ADMINISTRATEUR") throw new Error("role");
             appliquer(profil.service);
-            document.querySelectorAll("[data-admin-nom]").forEach((el) => { el.textContent = profil.nom; });
+            afficherAdmin(profil.nom, profil.service);
         })
         .catch((erreur) => {
             // Service Auth injoignable : on garde l'affichage d'après le jeton
