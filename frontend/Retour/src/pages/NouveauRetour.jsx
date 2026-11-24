@@ -6,12 +6,13 @@ import {
   formatDateHeure,
 } from '../services/retourService';
 import '../styles/NouveauRetour.css';
+import { idAdmin } from '../services/session';
 
 const ETATS = ['Bon état', 'Léger dommage', 'Dommage important'];
 
 const INITIAL = {
   numeroContrat: '',
-  administrateurId: '1', // doit exister dans la table des administrateurs
+  administrateurId: String(idAdmin() || ''), // administrateur connecté (jeton)
   dateRetour: '',
   etat: 'Bon état',
   description: '',

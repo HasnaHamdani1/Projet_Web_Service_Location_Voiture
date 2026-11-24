@@ -4,7 +4,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from enums import EtatVehicule
 from models import Retour
-from config import CONTRAT_API_URL, VEHICULE_API_URL
+from config import CONTRAT_API_URL, RETOUR_CONTRAT_API_KEY, RETOUR_VEHICULE_API_KEY, VEHICULE_API_URL
 
 
 class RetourService:
@@ -223,7 +223,8 @@ class RetourService:
         try:
             # Route du service Contrat : PUT /contrats/{id}/statut {"statut": "CLOTURE"}
             for methode in (requests.put,):
-                response = methode(url, json={"statut": "CLOTURE"}, timeout=5)
+                response = methode(url, json={"statut": "CLOTURE"}, timeout=5,
+                                   headers={"X-API-Key": RETOUR_CONTRAT_API_KEY})
 
                 if response.status_code == 405:      # mauvaise méthode
                     derniere_reponse = response
@@ -286,7 +287,8 @@ class RetourService:
             response = requests.put(
                 f"{self.vehicule_api_url}/vehicules/{vehicule_id}/statut",
                 json={"statut": nouveauStatut},
-                timeout=5
+                timeout=5,
+                headers={"X-API-Key": RETOUR_VEHICULE_API_KEY}
             )
 
             response.raise_for_status()

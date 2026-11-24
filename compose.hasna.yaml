@@ -23,6 +23,7 @@ services:
       - ./service_contrat/migrations/005_add_deposit_details.sql:/docker-entrypoint-initdb.d/005_contract_deposit.sql:ro
       - ./service_reservation/migrations/006_service_reservation.sql:/docker-entrypoint-initdb.d/006_service_reservation.sql:ro
       - ./database/migrations/007_vehicules_image_url.sql:/docker-entrypoint-initdb.d/007_vehicules_image_url.sql:ro
+      - ./database/migrations/008_administrateur_services.sql:/docker-entrypoint-initdb.d/008_administrateur_services.sql:ro
     # Ouverte aux autres PC : tous les services de l'équipe utilisent cette base
     ports:
       - "3306:3306"
@@ -42,6 +43,9 @@ services:
       CONTRAT_API_URL: http://${IP_SARA:?Set IP_SARA in .env}:8003
       VEHICULE_API_URL: http://${IP_LEILA:?Set IP_LEILA in .env}:8005
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      RETOUR_CONTRAT_API_KEY: ${RETOUR_CONTRAT_API_KEY:-}
+      RETOUR_VEHICULE_API_KEY: ${RETOUR_VEHICULE_API_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy

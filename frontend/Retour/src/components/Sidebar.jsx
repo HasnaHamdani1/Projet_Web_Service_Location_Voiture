@@ -1,15 +1,11 @@
 import React from 'react';
 import '../styles/Sidebar.css';
 
-const ADMIN_URL =
-  import.meta.env.VITE_ADMIN_URL ||
-  `${window.location.protocol}//${window.location.hostname}:3000/admin`;
+import { ADMIN_URL } from '../services/session';
 
+// L'administrateur Retour voit le Dashboard (commun) et son service seulement
 const MENU = [
   { id: 'dashboard',    label: 'Dashboard',    icon: '▦',  href: `${ADMIN_URL}/dashboard.html` },
-  { id: 'vehicules',    label: 'Véhicules',    icon: '🚗', href: `${ADMIN_URL}/admin.html` },
-  { id: 'reservations', label: 'Réservations', icon: '📅' },
-  { id: 'contrats',     label: 'Contrats',     icon: '📄' },
   { id: 'retours',      label: 'Retours',      icon: '⬅️' },
   { id: 'parametres',   label: 'Paramètres',   icon: '⚙️' },
 ];

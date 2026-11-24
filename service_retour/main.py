@@ -11,6 +11,7 @@ from database import get_db
 from models import Retour
 from schemas import RetourCreate, RetourUpdate, RetourResponse
 from retour_service import retour_service
+from acces import admin_retours
 
 
 app = FastAPI(
@@ -277,8 +278,11 @@ def obtenir_retour(
 )
 def ajouter_retour(
     retour_data: RetourCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(admin_retours)
 ):
+    # Administrateur enregistré : celui du jeton (la valeur envoyée par le formulaire est ignorée)
+    retour_data = retour_data.model_copy(update={"administrateur_id": _admin["id"]})
 
     nouveau_retour = Retour(
         **retour_data.model_dump()
@@ -317,8 +321,11 @@ def ajouter_retour(
 )
 def traiter_retour(
     retour_data: RetourCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(admin_retours)
 ):
+    # Administrateur enregistré : celui du jeton (la valeur envoyée par le formulaire est ignorée)
+    retour_data = retour_data.model_copy(update={"administrateur_id": _admin["id"]})
 
     # Vérifier si un retour existe déjà pour ce contrat
     retour_existant = db.query(Retour).filter(
@@ -451,7 +458,8 @@ def traiter_retour(
 def modifier_retour(
     retour_id: int,
     retour_data: RetourUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(admin_retours)
 ):
 
     retour = db.query(Retour).filter(
@@ -494,7 +502,8 @@ def modifier_retour(
 )
 def supprimer_retour(
     retour_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(admin_retours)
 ):
 
     retour = db.query(Retour).filter(
