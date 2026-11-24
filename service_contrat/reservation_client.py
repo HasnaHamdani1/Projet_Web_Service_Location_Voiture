@@ -8,10 +8,16 @@ def _base_url() -> str:
     return os.getenv("RESERVATION_SERVICE_URL", "http://127.0.0.1:8002").rstrip("/")
 
 
+def _entetes() -> dict:
+    """Clé dédiée au service Contrat (RESERVATION_API_KEY), envoyée si elle est configurée."""
+    cle = os.getenv("RESERVATION_API_KEY", "").strip()
+    return {"X-API-Key": cle} if cle else {}
+
+
 def obtenir_reservation(reservation_id: int) -> dict:
     timeout = float(os.getenv("RESERVATION_SERVICE_TIMEOUT_SECONDS", "5"))
     try:
-        response = httpx.get(f"{_base_url()}/reservations/{reservation_id}", timeout=timeout)
+        response = httpx.get(f"{_base_url()}/reservations/{reservation_id}", headers=_entetes(), timeout=timeout)
     except httpx.RequestError as exc:
         raise HTTPException(status_code=503, detail="Le service Réservation est indisponible") from exc
     if response.status_code == 404:
@@ -27,7 +33,7 @@ def obtenir_reservation(reservation_id: int) -> dict:
 def lister_reservations() -> list[dict]:
     timeout = float(os.getenv("RESERVATION_SERVICE_TIMEOUT_SECONDS", "5"))
     try:
-        response = httpx.get(f"{_base_url()}/reservations", timeout=timeout)
+        response = httpx.get(f"{_base_url()}/reservations", headers=_entetes(), timeout=timeout)
         response.raise_for_status()
         data = response.json()
     except (httpx.RequestError, httpx.HTTPStatusError, ValueError) as exc:

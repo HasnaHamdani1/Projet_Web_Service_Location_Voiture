@@ -1,8 +1,11 @@
 // Adresses de développement. Une URL peut aussi pointer vers la passerelle de l’équipe.
+// Par défaut : même machine que la page (config.js du frontend commun, sinon hôte de la page).
+const origine = `${location.protocol}//${location.hostname}`;
+const cfg = window.APP_CONFIG || {};
 const configuration = {
-  contrats: "http://localhost:8003",
-  reservations: "http://localhost:8002/reservations",
-  vehicules: "http://localhost:8001/vehicules",
+  contrats: cfg.contract || `${origine}:8003`,
+  reservations: `${cfg.reservation || `${origine}:8002`}/reservations`,
+  vehicules: `${cfg.vehicle || `${origine}:8005`}/vehicules`,
 };
 
 async function requete(url, options = {}) {
