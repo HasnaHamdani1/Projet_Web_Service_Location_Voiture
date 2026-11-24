@@ -20,6 +20,7 @@ services:
       CLIENT_PROVIDER: db
       DEVISE: ${DEVISE:-MAD}
       EMAIL_BACKEND: ${RESERVATION_EMAIL_BACKEND:-console}
+      VEHICLE_SERVICE_API_KEY: ${RESERVATION_VEHICULE_API_KEY:-}
     ports:
       - "8002:8000"
     healthcheck:

@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from . import models, reservation_client
+from . import models, reservation_client, vehicule_client
 from .schemas import ContratFinalisation
 
 
@@ -31,13 +31,15 @@ def creer_contrat(db: Session, reservation_id: int, administrateur_id: int):
         db.add(contrat)
         db.commit()
         db.refresh(contrat)
-        return contrat
     except (KeyError, TypeError, ValueError) as exc:
         db.rollback()
         raise HTTPException(status_code=503, detail="La réponse de réservation ne respecte pas le format attendu") from exc
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="Un contrat existe déjà pour cette réservation") from exc
+    # Cycle du véhicule : RESERVE → LOUE à la création du contrat
+    vehicule_client.marquer_loue(reservation.get("vehicule_id"))
+    return contrat
 
 
 def creer_contrat_valide(db: Session, confirmation: ContratFinalisation, administrateur_id: int):
@@ -71,13 +73,15 @@ def creer_contrat_valide(db: Session, confirmation: ContratFinalisation, adminis
                 setattr(contrat, champ, getattr(confirmation, champ))
         db.commit()
         db.refresh(contrat)
-        return contrat
     except (KeyError, TypeError, ValueError) as exc:
         db.rollback()
         raise HTTPException(status_code=503, detail="La réponse de réservation ne respecte pas le format attendu") from exc
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="Un contrat existe déjà pour cette réservation ou ce numéro") from exc
+    # Cycle du véhicule : RESERVE → LOUE à la création du contrat
+    vehicule_client.marquer_loue(reservation.get("vehicule_id"))
+    return contrat
 
 
 def ajouter_caution(db: Session, contrat: models.Contrat, montant: Decimal):

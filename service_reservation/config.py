@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Services de l'équipe
     VEHICLE_SERVICE_URL: str = "http://127.0.0.1:8005"
     VEHICLE_SERVICE_TIMEOUT: float = 5.0
+    # Clé X-API-Key donnée par le service Véhicule (VEHICULE_SERVICE_API_KEYS=reservations:<clé>) :
+    # statut du véhicule RESERVE à la réservation, DISPONIBLE si elle est annulée
+    VEHICLE_SERVICE_API_KEY: str = ""
     # Source des clients : "db" (lecture seule utilisateurs/clients) ou "http" (API Auth)
     CLIENT_PROVIDER: Literal["db", "http"] = "db"
     AUTH_SERVICE_URL: str = "http://127.0.0.1:8004"

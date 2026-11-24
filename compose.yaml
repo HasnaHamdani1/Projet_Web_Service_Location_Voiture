@@ -68,6 +68,7 @@ services:
       CLIENT_PROVIDER: db
       DEVISE: ${DEVISE:-MAD}
       EMAIL_BACKEND: ${RESERVATION_EMAIL_BACKEND:-console}
+      VEHICLE_SERVICE_API_KEY: ${RESERVATION_VEHICULE_API_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -117,6 +118,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       CONTRAT_SERVICE_API_KEYS: ${CONTRAT_SERVICE_API_KEYS:-}
+      VEHICLE_SERVICE_URL: http://service_vehicule:8000
+      CONTRAT_VEHICULE_API_KEY: ${CONTRAT_VEHICULE_API_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy

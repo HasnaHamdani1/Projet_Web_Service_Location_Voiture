@@ -80,6 +80,10 @@ class FournisseurVehicules(ABC):
     @abstractmethod
     def obtenir(self, vehicule_id: int) -> Vehicule | None: ...
 
+    def changer_statut(self, vehicule_id: int, statut: str) -> bool:
+        """Met à jour le statut du véhicule (RESERVE, DISPONIBLE) ; False si le service Véhicule refuse."""
+        return True
+
 
 class VehiculesHttp(FournisseurVehicules):
     def __init__(self, base_url: str | None = None, client: httpx.Client | None = None):
@@ -107,6 +111,20 @@ class VehiculesHttp(FournisseurVehicules):
     def obtenir(self, vehicule_id: int) -> Vehicule | None:
         data = self._get(f"/vehicules/{vehicule_id}")
         return convertir_vehicule(data) if data else None
+
+    def changer_statut(self, vehicule_id: int, statut: str) -> bool:
+        """PUT /vehicules/{id}/statut avec la clé du service Réservation ; un échec est journalisé, pas bloquant."""
+        try:
+            resp = self.client.put(f"{self.base_url}/vehicules/{vehicule_id}/statut", json={"statut": statut},
+                                   headers={"X-API-Key": settings.VEHICLE_SERVICE_API_KEY})
+        except httpx.HTTPError as exc:
+            logger.error("Statut du véhicule %s non mis à jour (%s) : %s", vehicule_id, statut, exc)
+            return False
+        if resp.is_error:
+            logger.error("Statut du véhicule %s non mis à jour (%s) : HTTP %s %s", vehicule_id, statut,
+                         resp.status_code, resp.text[:200])
+            return False
+        return True
 
 
 # ----------------------------------------------------------------------------- clients

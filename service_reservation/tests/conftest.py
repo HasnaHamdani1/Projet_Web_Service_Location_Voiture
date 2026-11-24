@@ -76,7 +76,7 @@ VEHICULES = [
      "prix_par_jour": 45.0, "statut": "DISPONIBLE", "categorie": "Citadine", "boite": "Manuelle",
      "carburant": "Essence"},
     {"id": 2, "immatriculation": "EF-456-GH", "marque": "Renault", "modele": "Clio", "annee": 2022,
-     "prix_par_jour": 45.0, "statut": "LOUE"},
+     "prix_par_jour": 45.0, "statut": "DISPONIBLE"},
     {"id": 3, "immatriculation": "GH-567-IJ", "marque": "Renault", "modele": "Mégane", "annee": 2022,
      "prix_par_jour": 52.0, "statut": "MAINTENANCE"},
 ]
@@ -84,13 +84,28 @@ ADMIN, CLAIRE, THOMAS = 1, 2, 3
 
 
 class FauxVehicules(FournisseurVehicules):
-    """Remplace l'appel HTTP au service Véhicule (mêmes données que la table vehicules)."""
+    """Remplace l'appel HTTP au service Véhicule (mêmes données que la table vehicules).
+
+    Les changements de statut demandés sont enregistrés dans STATUTS_DEMANDES ; le statut lu reste
+    celui de VEHICULES, sauf s'il est forcé dans STATUTS_FORCES (tests du cycle du véhicule)."""
 
     def lister(self) -> list[Vehicule]:
-        return [convertir_vehicule(v) for v in VEHICULES]
+        return [self._avec_statut(v) for v in VEHICULES]
 
     def obtenir(self, vehicule_id: int):
-        return next((convertir_vehicule(v) for v in VEHICULES if v["id"] == vehicule_id), None)
+        return next((self._avec_statut(v) for v in VEHICULES if v["id"] == vehicule_id), None)
+
+    @staticmethod
+    def _avec_statut(v):
+        return convertir_vehicule({**v, "statut": STATUTS_FORCES.get(v["id"], v["statut"])})
+
+    def changer_statut(self, vehicule_id, statut):
+        STATUTS_DEMANDES.append((vehicule_id, statut))
+        return True
+
+
+STATUTS_DEMANDES: list = []
+STATUTS_FORCES: dict = {}
 
 
 class FauxExpediteur(Expediteur):
@@ -148,6 +163,8 @@ def expediteur_test():
 
 @pytest.fixture
 def client(expediteur_test):
+    STATUTS_DEMANDES.clear()
+    STATUTS_FORCES.clear()
     def _svc():
         db = SessionLocal()
         try:
