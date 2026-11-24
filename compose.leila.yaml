@@ -1,0 +1,70 @@
+# PARC AUTO – PC de Leila (mode multi-PC) : service Véhicule + service Auth + frontend commun
+#   docker compose -f compose.leila.yaml up -d --build
+# Ports à ouvrir dans le pare-feu de ce PC : 8005 (Véhicule), 8004 (Auth), 3000 (frontend).
+# La base est sur le PC de Hasna ; les adresses des autres PC viennent du fichier .env.
+name: parc-auto-leila
+
+services:
+  service_vehicule:
+    build:
+      context: .
+      dockerfile: Dockerfile.vehicule
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}@${IP_HASNA:?Set IP_HASNA in .env}:3306/${MYSQL_DATABASE:-db_location_voitures}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    ports:
+      - "8005:8000"
+    volumes:
+      - vehicule_images:/app/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  service_auth:
+    build:
+      context: .
+      dockerfile: service_auth/Dockerfile
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}@${IP_HASNA:?Set IP_HASNA in .env}:3306/${MYSQL_DATABASE:-db_location_voitures}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_TTL_MINUTES: ${JWT_TTL_MINUTES:-60}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    ports:
+      - "8004:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    # Adresses vues par le navigateur. Véhicule et Auth : ce PC (adresse de la page).
+    environment:
+      RESERVATION_API_URL: http://${IP_MARYAM:?Set IP_MARYAM in .env}:8002
+      CONTRACT_API_URL: http://${IP_SARA:?Set IP_SARA in .env}:8003
+      RETOUR_API_URL: http://${IP_HASNA:?Set IP_HASNA in .env}:8006
+      RETOUR_URL: http://${IP_HASNA:?Set IP_HASNA in .env}:5173
+    depends_on:
+      service_auth:
+        condition: service_healthy
+      service_vehicule:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  vehicule_images:

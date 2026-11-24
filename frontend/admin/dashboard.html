@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarRental | Tableau de bord</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-icon">&#128663;</span>
+            <div>
+                <h2>PARC AUTO</h2>
+                <span class="badge-connecte">&#9679; Connecté</span>
+            </div>
+        </div>
+
+        <p class="menu-label">MENU PRINCIPAL</p>
+        <ul class="sidebar-menu">
+            <li class="active">
+                <a href="dashboard.html" class="sidebar-link">
+                    <span>&#9635;</span> Dashboard
+                </a>
+            </li>
+            <li>
+                <a href="admin.html" class="sidebar-link">
+                    <span>&#128663;</span> Véhicules
+                </a>
+            </li>
+            <li>
+                <a href="reservations.html" class="sidebar-link">
+                    <span>&#128197;</span> Réservations
+                </a>
+            </li>
+            <li>
+                <a href="/Contrat/index.html" class="sidebar-link">
+                    <span>&#128196;</span> Contrats
+                </a>
+            </li>
+            <li>
+                <a href="#" data-module="retours" class="sidebar-link">
+                    <span>&#8617;</span> Retours
+                </a>
+            </li>
+            <li>
+                <a href="#" class="sidebar-link">
+                    <span>&#9881;</span> Paramètres
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <span class="footer-dot"></span>
+            Système opérationnel
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <p class="breadcrumb">CarRental / Administration</p>
+                <h2>Tableau de bord</h2>
+            </div>
+            <div class="top-admin">
+                <div class="admin-avatar">A</div>
+                <div class="admin-info">
+                    <strong>Administrateur</strong>
+                    <span>Espace de gestion</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="welcome-section">
+            <div>
+                <span class="eyebrow">VUE D'ENSEMBLE</span>
+                <h1>Bienvenue dans votre espace</h1>
+                <p>Suivez et gérez votre parc automobile en un seul endroit.</p>
+            </div>
+            <a class="refresh-btn" href="dashboard.html">
+                <span>&#8635;</span> Actualiser
+            </a>
+        </section>
+
+        <div id="dashboard-error" class="dashboard-alert" hidden></div>
+
+        <section class="stats-section">
+            <div class="section-heading">
+                <div>
+                    <h2>Statistiques du parc</h2>
+                    <p>Situation actuelle de votre flotte automobile</p>
+                </div>
+                <span class="live-indicator">DONNÉES EN DIRECT</span>
+            </div>
+
+            <div class="stats-grid">
+                <article class="stat-card total-card">
+                    <div class="stat-top">
+                        <span class="stat-icon">&#128663;</span>
+                        <span class="stat-tag">GLOBAL</span>
+                    </div>
+                    <p>Total véhicules</p>
+                    <h2 id="total-vehicles">—</h2>
+                    <span class="stat-note">Véhicules enregistrés</span>
+                </article>
+
+                <article class="stat-card available-card">
+                    <div class="stat-top">
+                        <span class="stat-icon">&#10003;</span>
+                        <span class="stat-tag">DISPONIBLE</span>
+                    </div>
+                    <p>Disponibles</p>
+                    <h2 id="available-vehicles">—</h2>
+                    <span class="stat-note">Prêts à être loués</span>
+                </article>
+
+                <article class="stat-card rented-card">
+                    <div class="stat-top">
+                        <span class="stat-icon">&#128652;</span>
+                        <span class="stat-tag">LOCATION</span>
+                    </div>
+                    <p>Loués</p>
+                    <h2 id="rented-vehicles">—</h2>
+                    <span class="stat-note">En cours de location</span>
+                </article>
+
+                <article class="stat-card maintenance-card">
+                    <div class="stat-top">
+                        <span class="stat-icon">&#128295;</span>
+                        <span class="stat-tag">ENTRETIEN</span>
+                    </div>
+                    <p>En maintenance</p>
+                    <h2 id="maintenance-vehicles">—</h2>
+                    <span class="stat-note">Indisponibles actuellement</span>
+                </article>
+            </div>
+        </section>
+
+        <section class="dashboard-bottom">
+            <article class="panel fleet-panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2>État de la flotte</h2>
+                        <p>Répartition des véhicules par statut</p>
+                    </div>
+                    <span class="panel-icon">&#128202;</span>
+                </div>
+
+                <div class="fleet-total">
+                    <strong id="fleet-total">—</strong>
+                    <span>véhicules au total</span>
+                </div>
+
+                <div class="fleet-row">
+                    <div class="fleet-label">
+                        <span><i class="legend-dot dot-available"></i> Disponibles</span>
+                        <strong id="fleet-available">—</strong>
+                    </div>
+                    <div class="progress-track">
+                        <div id="bar-available" class="progress-fill fill-available"></div>
+                    </div>
+                </div>
+
+                <div class="fleet-row">
+                    <div class="fleet-label">
+                        <span><i class="legend-dot dot-rented"></i> Loués</span>
+                        <strong id="fleet-rented">—</strong>
+                    </div>
+                    <div class="progress-track">
+                        <div id="bar-rented" class="progress-fill fill-rented"></div>
+                    </div>
+                </div>
+
+                <div class="fleet-row">
+                    <div class="fleet-label">
+                        <span><i class="legend-dot dot-maintenance"></i> Maintenance</span>
+                        <strong id="fleet-maintenance">—</strong>
+                    </div>
+                    <div class="progress-track">
+                        <div id="bar-maintenance" class="progress-fill fill-maintenance"></div>
+                    </div>
+                </div>
+
+                <div class="fleet-row">
+                    <div class="fleet-label">
+                        <span><i class="legend-dot dot-reserved"></i> Réservés</span>
+                        <strong id="fleet-reserved">—</strong>
+                    </div>
+                    <div class="progress-track">
+                        <div id="bar-reserved" class="progress-fill fill-reserved"></div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel shortcuts-panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2>Accès rapide</h2>
+                        <p>Les actions principales</p>
+                    </div>
+                    <span class="panel-icon">&#9889;</span>
+                </div>
+
+                <a href="admin.html" class="shortcut">
+                    <span class="shortcut-icon blue">&#128663;</span>
+                    <span><strong>Gérer les véhicules</strong><small>Consulter et modifier la flotte</small></span>
+                    <b>&#8250;</b>
+                </a>
+
+                <a href="reservations.html" class="shortcut">
+                    <span class="shortcut-icon purple">&#128197;</span>
+                    <span><strong>Gérer les réservations</strong><small>Consulter les demandes clients</small></span>
+                    <b>&#8250;</b>
+                </a>
+
+                <a href="../Contrat/index.html" class="shortcut">
+                    <span class="shortcut-icon orange">&#128196;</span>
+                    <span><strong>Consulter les contrats</strong><small>Accéder à la gestion des contrats</small></span>
+                    <b>&#8250;</b>
+                </a>
+            </article>
+        </section>
+
+        <footer class="dashboard-footer">
+            <span>PARC AUTO</span>
+            <span>Administration · Gestion du parc automobile</span>
+        </footer>
+    </main>
+</div>
+
+<script src="/config.js"></script>
+
+<script src="menu.js"></script>
+
+<script src="dashboard.js"></script>
+</body>
+</html>

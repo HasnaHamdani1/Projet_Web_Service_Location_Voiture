@@ -1,0 +1,28 @@
+# PARC AUTO – PC de Sara (mode multi-PC) : API du service Contrat
+#   docker compose -f compose.sara.yaml up -d --build
+# Port à ouvrir dans le pare-feu de ce PC : 8003.
+# Les pages Contrat sont servies par le frontend commun (PC de Leila, /Contrat/index.html).
+# La base est sur le PC de Hasna ; les adresses des autres PC viennent du fichier .env.
+name: parc-auto-sara
+
+services:
+  service_contrat:
+    build:
+      context: .
+      dockerfile: service_contrat/Dockerfile
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-location_app}:${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}@${IP_HASNA:?Set IP_HASNA in .env}:3306/${MYSQL_DATABASE:-db_location_voitures}
+      RESERVATION_SERVICE_URL: http://${IP_MARYAM:?Set IP_MARYAM in .env}:8002
+      RESERVATION_SERVICE_TIMEOUT_SECONDS: ${RESERVATION_SERVICE_TIMEOUT_SECONDS:-5}
+      RESERVATION_API_KEY: ${CONTRAT_RESERVATION_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    ports:
+      - "8003:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped

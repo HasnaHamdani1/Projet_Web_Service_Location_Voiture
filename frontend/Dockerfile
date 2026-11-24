@@ -5,8 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 RUN addgroup --system --gid 10006 appgroup \
-    && adduser --system --uid 10006 --ingroup appgroup appuser
+    && adduser --system --uid 10006 --ingroup appgroup appuser \
+    && chown appuser:appgroup /app
 
+# server.py écrit config.js dans /app au démarrage : le dossier doit appartenir à appuser
 COPY --chown=appuser:appgroup . ./
 USER appuser
 
