@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from . import horloge
 from .config import settings
-from .erreurs import Conflit, Interdit, Introuvable, RegleMetier
+from .erreurs import Conflit, Interdit, Introuvable, RegleMetier, ServiceIndisponible
 from .fournisseurs import Client, FournisseurClients, FournisseurVehicules, Vehicule
 from .models import (
     LIBELLES_STATUT,
@@ -339,6 +339,10 @@ class ServiceReservation:
         self._valider_periode(data.date_debut)
         c = self._client(acteur.id)
         v = self._vehicule_reservable(data.vehicule_id)
+        # Cycle du véhicule : DISPONIBLE → RESERVE (réservation) → LOUE (contrat) → DISPONIBLE (retour)
+        if v.statut != "DISPONIBLE":
+            raise Conflit(f"Ce véhicule n'est pas disponible (statut : {v.statut}).",
+                          champ="vehicule_id", code="vehicule_indisponible")
         q = calculer_devis(nombre_jours(data.date_debut, data.date_fin), v.prix_jour, data.assistance)
 
         self._verrouiller_vehicule(v.id)
@@ -352,6 +356,7 @@ class ServiceReservation:
         self.db.add(r)
         self._valider_ecriture()
         logger.info("Réservation %s créée", d.numero)
+        self.vehicules.changer_statut(v.id, "RESERVE")
         return self._charger(r.id)
 
     def _auteur(self, r: Reservation, acteur: Acteur) -> str:
@@ -404,7 +409,21 @@ class ServiceReservation:
         self._evenement(r, "CANCELLED", "Réservation annulée" + (f" : {motif}" if motif else ""),
                         self._auteur(r, acteur))
         self._valider_ecriture()
+        self._liberer_vehicule(r.vehicule_id)
         return self._charger(r.id)
+
+    def _liberer_vehicule(self, vehicule_id: int) -> None:
+        """Après une annulation : RESERVE → DISPONIBLE si plus aucune réservation active (jamais un véhicule LOUE)."""
+        actives = self.db.scalar(select(func.count()).select_from(Reservation).where(
+            Reservation.vehicule_id == vehicule_id, Reservation.statut.in_(STATUTS_ACTIFS)))
+        if actives:
+            return
+        try:
+            v = self.vehicules.obtenir(vehicule_id)
+        except ServiceIndisponible:
+            return
+        if v and v.statut == "RESERVE":
+            self.vehicules.changer_statut(vehicule_id, "DISPONIBLE")
 
     def _envoyer_confirmation(self, r: Reservation) -> None:
         donnees = self.serialiser(r)

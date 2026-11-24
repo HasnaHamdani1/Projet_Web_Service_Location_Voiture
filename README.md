@@ -50,14 +50,27 @@ Each administrator manages **one** service, chosen when the account is created (
 
 - Every administrator sees the **Dashboard** and the menu of **their own service** only. Opening another service's page sends them back to the dashboard.
 - Every API **refuses (403)** a write action by an administrator of another service: Vehicle (add, edit, photo, delete), Reservation (counter confirmation, cancellation, CSV export, customer records), Contract (create, deposit, validation, closing), Return (record, edit, delete). Reading stays open.
-- Service-to-service calls use an `X-API-Key`: Contract → Reservation (`RESERVATION_SERVICE_API_KEYS` / `CONTRAT_RESERVATION_API_KEY`), Return → Contract (`CONTRAT_SERVICE_API_KEYS` / `RETOUR_CONTRAT_API_KEY`), Return → Vehicle (`VEHICULE_SERVICE_API_KEYS` / `RETOUR_VEHICULE_API_KEY`).
+- Service-to-service calls use an `X-API-Key`: Contract → Reservation (`RESERVATION_SERVICE_API_KEYS` / `CONTRAT_RESERVATION_API_KEY`), Return → Contract (`CONTRAT_SERVICE_API_KEYS` / `RETOUR_CONTRAT_API_KEY`), Reservation, Contract and Return → Vehicle (`VEHICULE_SERVICE_API_KEYS` / `RESERVATION_VEHICULE_API_KEY`, `CONTRAT_VEHICULE_API_KEY`, `RETOUR_VEHICULE_API_KEY`).
 - The Return interface (port 5173) receives the administrator's token from the dashboard menu (`#jeton=…`, removed from the address at once).
+
+## Vehicle and contract life cycle
+
+| Step | Service that calls the Vehicle API (`PUT /vehicules/{id}/statut`, `X-API-Key`) | Vehicle status | Contract status |
+|---|---|---|---|
+| Vehicle added by Leila | – | `DISPONIBLE` | – |
+| Customer books (only a `DISPONIBLE` vehicle can be booked) | Reservation | `RESERVE` | – |
+| Booking cancelled (and no other active booking) | Reservation | `DISPONIBLE` | – |
+| Contract created by Sara | Contract | `LOUE` | `VALIDE` |
+| Return recorded by Hasna | Return | `DISPONIBLE` (`MAINTENANCE` if major damage) | `CLOTURE` |
+
+The Return service updates the vehicle and closes the contract **before** saving the return: if a call fails, nothing is saved and the return can be recorded again.
 
 ## REST links between services
 
 | Caller → service | Route | Purpose |
 |---|---|---|
-| Reservation → Vehicle | `GET /vehicules`, `GET /vehicules/{id}` | catalogue, price, status, photo |
+| Reservation → Vehicle | `GET /vehicules`, `GET /vehicules/{id}`, `PUT /vehicules/{id}/statut` (header `X-API-Key`) | catalogue, price, status `RESERVE` / `DISPONIBLE` |
+| Contract → Vehicle | `PUT /vehicules/{id}/statut` (header `X-API-Key`) | status `LOUE` when the contract is created |
 | Customer area → Auth | `POST /auth/inscription`, `/auth/token`, `GET /auth/me` | customer and admin accounts |
 | Customer area / admin pages → Reservation | `POST /reservations`, `GET /reservations`, `POST /reservations/{id}/paiement`, `PUT /reservations/{id}/annulation`, `PATCH /reservations/{id}/statut`, `GET /reservations/export.csv` | bookings (price computed by the server) |
 | Contract → Reservation | `GET /reservations/{id}` (header `X-API-Key`) | create a contract from a confirmed booking |

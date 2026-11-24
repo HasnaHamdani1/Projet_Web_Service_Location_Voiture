@@ -215,3 +215,26 @@ def test_devis_public(client):
     r = client.post("/reservations/devis", json={"vehicule_id": 1, "date_debut": jour(10), "date_fin": jour(13),
                                                   "assistance": True}).json()
     assert (r["montant_total"], r["montant_tva"], r["duree_jours"]) == (153.0, 25.5, 3)
+
+
+def test_cycle_du_vehicule_reserve_puis_libere(client, h_claire):
+    """Réservation → le service Véhicule passe le véhicule en RESERVE ; annulation → DISPONIBLE."""
+    from .conftest import STATUTS_DEMANDES, STATUTS_FORCES
+
+    r = creer(client, h_claire, debut=10, fin=13)
+    assert STATUTS_DEMANDES == [(1, "RESERVE")]
+
+    STATUTS_FORCES[1] = "RESERVE"  # état renvoyé désormais par le service Véhicule
+    rep = client.put(f"/reservations/{r['id']}/annulation", headers=h_claire)
+    assert rep.status_code == 200
+    assert STATUTS_DEMANDES[-1] == (1, "DISPONIBLE")
+
+
+def test_reservation_refusee_si_le_vehicule_n_est_pas_disponible(client, h_claire):
+    from .conftest import STATUTS_FORCES
+
+    for statut in ("RESERVE", "LOUE"):
+        STATUTS_FORCES[1] = statut
+        rep = client.post("/reservations", json=corps(debut=10, fin=13), headers=h_claire)
+        assert rep.status_code == 409, statut
+        assert rep.json()["code"] == "vehicule_indisponible"
