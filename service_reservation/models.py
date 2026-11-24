@@ -22,4 +22,4 @@ class Reservation(Base):
 
     prix_total = Column("montant_estime", Float, nullable=False)
 
-    statut = Column(String, default="EN_ATTENTE", nullable=False)
+    statut = Column(String(30), default="EN_ATTENTE", nullable=False)
