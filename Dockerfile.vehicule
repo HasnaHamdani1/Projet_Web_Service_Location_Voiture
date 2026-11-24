@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && mkdir -p /app/uploads \
     && chown -R appuser:appgroup /app/uploads
 
-COPY --chown=appuser:appgroup database.py models.py main.py ./
+COPY --chown=appuser:appgroup acces.py database.py models.py main.py ./
 
 USER appuser
 

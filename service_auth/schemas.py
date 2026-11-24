@@ -30,6 +30,8 @@ class UserRead(BaseModel):
     email: EmailStr
     telephone: str | None
     role: str
+    # Administrateur : service qu'il gère (VEHICULE, RESERVATION, CONTRAT, RETOUR) ; None pour un client
+    service: str | None = None
 
 
 class TokenResponse(BaseModel):

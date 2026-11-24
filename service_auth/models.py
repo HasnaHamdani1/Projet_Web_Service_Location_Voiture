@@ -1,5 +1,5 @@
 
-from sqlalchemy import BigInteger, Column, String
+from sqlalchemy import BigInteger, Column, Enum, ForeignKey, String
 from .database import Base
 
 
@@ -25,6 +25,21 @@ class Administrateur(Base):
         primary_key=True,
         nullable=False,
     )
+
+
+# Service géré par chaque administrateur (migration 008) : périmètre de ses droits
+SERVICES_ADMIN = ("VEHICULE", "RESERVATION", "CONTRAT", "RETOUR")
+
+
+class AdministrateurService(Base):
+    __tablename__ = "administrateur_services"
+
+    administrateur_id = Column(
+        BigInteger,
+        ForeignKey("administrateurs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    service = Column(Enum(*SERVICES_ADMIN, name="service_admin"), nullable=False)
 
 
 class Client(Base):

@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from acces import admin_vehicules, admin_vehicules_ou_service
 from database import engine, Base, SessionLocal
 from models import Vehicule
 from pydantic import BaseModel, Field
@@ -64,7 +65,8 @@ class VehiculeCreate(BaseModel):
     annee: int = Field(ge=1950, le=2100)
     prix_par_jour: float = Field(gt=0)
     statut: StatutVehicule = StatutVehicule.DISPONIBLE
-    administrateur_id: int = Field(gt=0, description="Administrateur qui ajoute le véhicule (id de /auth/me)")
+    # Renseigné par le serveur avec l'administrateur connecté (jeton) ; la valeur envoyée est ignorée
+    administrateur_id: int | None = Field(default=None, gt=0)
 
 
 # Modèle de validation pour la modification
@@ -131,7 +133,8 @@ def obtenir_vehicule(
 @app.post("/vehicules", status_code=201)
 def ajouter_vehicule(
     nouveau: VehiculeCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: dict = Depends(admin_vehicules)
 ):
     vehicule_existant = db.query(Vehicule).filter(
         Vehicule.immatriculation == nouveau.immatriculation
@@ -143,7 +146,7 @@ def ajouter_vehicule(
             detail="Cette immatriculation existe déjà"
         )
 
-    vehicule = Vehicule(**nouveau.model_dump())
+    vehicule = Vehicule(**{**nouveau.model_dump(), "administrateur_id": admin["id"]})
 
     db.add(vehicule)
     db.commit()
@@ -157,7 +160,8 @@ def ajouter_vehicule(
 def modifier_vehicule(
     vehicule_id: int,
     donnees: VehiculeUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(admin_vehicules)
 ):
     vehicule = db.query(Vehicule).filter(
         Vehicule.id == vehicule_id
@@ -194,7 +198,8 @@ def modifier_vehicule(
 def modifier_statut_vehicule(
     vehicule_id: int,
     donnees: StatutUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _acteur: dict = Depends(admin_vehicules_ou_service)
 ):
     vehicule = db.query(Vehicule).filter(
         Vehicule.id == vehicule_id
@@ -218,7 +223,8 @@ def modifier_statut_vehicule(
 async def ajouter_image_vehicule(
     vehicule_id: int,
     image: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(admin_vehicules)
 ):
     vehicule = db.query(Vehicule).filter(
         Vehicule.id == vehicule_id
@@ -289,7 +295,8 @@ async def ajouter_image_vehicule(
 @app.delete("/vehicules/{vehicule_id}")
 def supprimer_vehicule(
     vehicule_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(admin_vehicules)
 ):
     vehicule = db.query(Vehicule).filter(
         Vehicule.id == vehicule_id

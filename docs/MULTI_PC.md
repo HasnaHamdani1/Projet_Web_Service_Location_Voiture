@@ -51,15 +51,19 @@ notepad .env
 MYSQL_PASSWORD=...            # lettres et chiffres uniquement
 MYSQL_ROOT_PASSWORD=...
 JWT_SECRET=...                # longue chaîne aléatoire
-RESERVATION_SERVICE_API_KEYS=contrats:<clé>
-CONTRAT_RESERVATION_API_KEY=<la même clé>
+RESERVATION_SERVICE_API_KEYS=contrats:<clé 1>
+CONTRAT_RESERVATION_API_KEY=<clé 1>
+VEHICULE_SERVICE_API_KEYS=retours:<clé 2>
+RETOUR_VEHICULE_API_KEY=<clé 2>
+CONTRAT_SERVICE_API_KEYS=retours:<clé 3>
+RETOUR_CONTRAT_API_KEY=<clé 3>
 IP_LEILA=192.168.1.10
 IP_MARYAM=192.168.1.11
 IP_SARA=192.168.1.12
 IP_HASNA=192.168.1.13
 ```
 
-Générer une valeur aléatoire (pour `JWT_SECRET`, puis pour `<clé>`) :
+Générer une valeur aléatoire (pour `JWT_SECRET`, puis pour chaque clé) :
 
 ```powershell
 -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 48 | % {[char]$_})
@@ -106,6 +110,7 @@ Pour retirer la règle après la séance : `Remove-NetFirewallRule -DisplayName 
    docker compose -f compose.leila.yaml up -d --build
    docker compose -f compose.leila.yaml exec service_auth python -m service_auth.create_admin
    ```
+   À lancer 4 fois : un administrateur par service (la commande demande le service : 1 Véhicules, 2 Réservations, 3 Contrats, 4 Retours). Chaque administrateur ne voit et ne gère que son service.
 3. **Maryam** :
    ```powershell
    docker compose -f compose.maryam.yaml up -d --build

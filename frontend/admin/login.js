@@ -6,7 +6,7 @@ const loginButton = document.getElementById("login-button");
 
 // Si un jeton existe déjà, ouvrir directement le dashboard
 if (sessionStorage.getItem("adminToken")) {
-    window.location.replace("admin.html");
+    window.location.replace("dashboard.html");
 }
 
 form.addEventListener("submit", async (event) => {
@@ -52,7 +52,7 @@ form.addEventListener("submit", async (event) => {
         }
 
         sessionStorage.setItem("adminToken", resultat.access_token);
-        window.location.replace("admin.html");
+        window.location.replace("dashboard.html");
 
     } catch (erreur) {
         errorMessage.textContent =

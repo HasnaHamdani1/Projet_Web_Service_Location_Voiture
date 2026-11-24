@@ -6,7 +6,7 @@
     <title>CarRental | Administration</title>
     <link rel="stylesheet" href="admin.css">
 </head>
-<body>
+<body data-service="VEHICULE">
 
 <div class="dashboard">
 
@@ -20,10 +20,10 @@
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="dashboard.html" class="sidebar-link"><span>&#9636;</span> Dashboard</a></li>
-            <li><a href="admin.html" class="sidebar-link"><span>&#128663;</span> V&eacute;hicules</a></li>
-            <li><a href="reservations.html" class="sidebar-link"><span>&#128197;</span> R&eacute;servations</a></li>
-            <li><a href="/Contrat/index.html" class="sidebar-link"><span>&#128196;</span> Contrats</a></li>
+            <li><a href="dashboard.html" class="sidebar-link" data-module="dashboard"><span>&#9636;</span> Dashboard</a></li>
+            <li><a href="admin.html" class="sidebar-link" data-module="vehicules"><span>&#128663;</span> V&eacute;hicules</a></li>
+            <li><a href="reservations.html" class="sidebar-link" data-module="reservations"><span>&#128197;</span> R&eacute;servations</a></li>
+            <li><a href="/Contrat/index.html" class="sidebar-link" data-module="contrats"><span>&#128196;</span> Contrats</a></li>
             <li><a href="#" data-module="retours" class="sidebar-link"><span>&#11013;</span> Retours</a></li>
             <li><a href="#" class="sidebar-link"><span>&#9881;</span> Param&egrave;tres</a></li>
         </ul>
